@@ -35,6 +35,6 @@
     "yargs": "^17.3.1"
   },
   "dependencies": {
-    "chess": "^0.5.0"
+    "chess": "^0.6.0"
   }
 }
