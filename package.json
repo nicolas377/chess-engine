@@ -1,40 +1,41 @@
 {
   "name": "chess_engine",
-  "version": "0.0.0",
-  "description": "",
+  "version": "0.1.0-dev",
   "private": true,
+  "description": "",
   "scripts": {
-    "build": "ts-node scripts/build.ts",
-    "check-format": "prettier . --check --ignore-path .gitignore",
-    "check-spelling": "cspell --config=.cspell.json \"**/*.{md,mdx,ts,js,tsx,jsx}\"",
-    "prettier": "prettier . --write --ignore-path .gitignore",
-    "lint": "eslint . --ignore-path .gitignore",
-    "test": "jest",
-    "start": "node dist",
-    "precommit": "tsc --noEmit && npm test && npm run check-format && npm run lint && npm run check-spelling",
-    "prepare": "husky install"
+    "build": "rollup -c",
+    "check-format": "prettier --ignore-path=.gitignore --check .",
+    "lint": "eslint --ignore-path=.gitignore .",
+    "prepare": "husky install",
+    "prettier": "prettier --ignore-path=.gitignore --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicolas377/chess-engine.git"
   },
   "keywords": [],
-  "author": "Nicolas Rodriguez",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/jest": "~27.4.1",
-    "@typescript-eslint/eslint-plugin": "~5.17.0",
-    "crypto-browserify": "~3.12.0",
-    "cspell": "~5.19.5",
-    "eslint": "~8.12.0",
-    "eslint-config-prettier": "~8.5.0",
-    "husky": "~7.0.4",
-    "jest": "~27.5.1",
-    "prettier": "~2.6.2",
-    "ts-jest": "~27.1.4",
-    "ts-loader": "~9.2.8",
-    "ts-node": "~10.7.0",
-    "typescript": "~4.6.3",
-    "webpack": "~5.71.0",
-    "yargs": "~17.4.0"
+  "author": "Nicolas Rodriguez (https://github.com/nicolas377)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nicolas377/chess-engine/issues"
   },
-  "dependencies": {
-    "chess": "~0.6.0"
+  "homepage": "https://github.com/nicolas377/chess-engine#readme",
+  "devDependencies": {
+    "@rollup/plugin-json": "~4.1.0",
+    "@rollup/plugin-typescript": "~8.3.3",
+    "@types/node": "~18.0.6",
+    "@typescript-eslint/eslint-plugin": "~5.30.7",
+    "eslint": "~8.20.0",
+    "eslint-config-prettier": "~8.5.0",
+    "eslint-import-resolver-typescript": "~3.3.0",
+    "eslint-plugin-import": "~2.26.0",
+    "husky": "~8.0.1",
+    "prettier": "~2.7.1",
+    "rollup": "~2.77.0",
+    "rollup-plugin-node-externals": "~4.1.1",
+    "ts-node": "~10.9.1",
+    "tsconfig-paths": "~4.0.0",
+    "typescript": "~4.7.4"
   }
 }
