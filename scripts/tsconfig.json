@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "alwaysStrict": true,
-    "strict": true,
-    "moduleResolution": "node"
-  },
-  "include": ["**/*.ts"]
-}
