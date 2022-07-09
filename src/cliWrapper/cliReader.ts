@@ -1,30 +1,24 @@
 import { createInterface } from "node:readline";
-import { processUciArgs } from "./uci";
+import {
+  processUciArgs,
+  UciCommandType,
+  UciCommandTypeAssociatedData,
+} from "./uci";
 import type { PromiseableVoid } from "@utils/types";
 
-export enum CommandType {
-  FIRST,
-  SECOND,
-}
+type UciCommandArgsCreator<T extends UciCommandType> = [
+  type: T,
+  data: UciCommandTypeAssociatedData[T]
+];
 
-export interface CommandTypeCallbackData {
-  [CommandType.FIRST]: { thing: string };
-  [CommandType.SECOND]: { other: number };
-}
+export type UnknownUciCommandArgs =
+  | UciCommandArgsCreator<UciCommandType.UNKNOWN>
+  | UciCommandArgsCreator<UciCommandType.FIRST>
+  | UciCommandArgsCreator<UciCommandType.SECOND>;
 
-// abbreviating LineReader to LR
-
-type LRCallbackArgsCreator<T extends CommandType> = {
-  type: T;
-} & CommandTypeCallbackData[T];
-
-export type LRCallbackArgs =
-  | LRCallbackArgsCreator<CommandType.FIRST>
-  | LRCallbackArgsCreator<CommandType.SECOND>;
-
-type LRCallback = (args: LRCallbackArgs) => PromiseableVoid;
-
-export function lineReader(cb: LRCallback): void {
+export function lineReader(
+  cb: (...args: UnknownUciCommandArgs) => PromiseableVoid
+): void {
   // never exit the program
   process.stdin.resume();
 
@@ -37,6 +31,6 @@ export function lineReader(cb: LRCallback): void {
   rl.on("line", (line: string) => {
     const args: string[] = line.trim().split(/\s+/g);
 
-    cb(processUciArgs(args));
+    cb(...processUciArgs(args));
   });
 }
