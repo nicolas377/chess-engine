@@ -1,4 +1,4 @@
-import { UnknownUciCommandArgs } from "./cliReader";
+import { UnknownUciCommandArgs } from "./stdinReader";
 
 export const enum UciCommandType {
   UNKNOWN,

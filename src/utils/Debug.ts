@@ -1,4 +1,5 @@
-export const enum DebugLevel {
+// the code relies on string enum values that match the all caps titles
+export enum DebugLevel {
   ERROR = "ERROR",
   WARNING = "WARNING",
   INFO = "INFO",
@@ -6,7 +7,7 @@ export const enum DebugLevel {
   TRACE = "TRACE",
 }
 
-type LevelCompareType = ">=" | "<=" | "=" | ">" | "<";
+type LevelComparisonOperator = ">=" | "<=" | "=" | ">" | "<";
 
 export class Debug {
   private static _logFile: string | undefined;
@@ -19,6 +20,14 @@ export class Debug {
     Debug._level = level;
   }
 
+  private static logHandler(message: string, level: DebugLevel): void {
+    if (Debug.levelCompare(Debug._level, level, ">=")) {
+      const timestamp = `${Date.now()}`;
+
+      console.log(`${timestamp} [${level}]: ${message}`);
+    }
+  }
+
   /**
    * Compares two levels against each other in the manner specified.
    *
@@ -29,7 +38,7 @@ export class Debug {
   private static levelCompare(
     left: DebugLevel,
     right: DebugLevel,
-    comparisonType: LevelCompareType
+    comparisonType: LevelComparisonOperator
   ): boolean {
     const allLevelsInOrder: DebugLevel[] = [
       DebugLevel.ERROR,
@@ -53,14 +62,6 @@ export class Debug {
         return leftIndex > rightIndex;
       case "<":
         return leftIndex < rightIndex;
-    }
-  }
-
-  private static logHandler(message: string, level: DebugLevel): void {
-    if (Debug.levelCompare(Debug._level, level, ">=")) {
-      const timestamp = `${Date.now()}`;
-
-      console.log(`${timestamp} [${level}]: ${message}`);
     }
   }
 

@@ -4,6 +4,7 @@ import {
   UciCommandType,
   UciCommandTypeAssociatedData,
 } from "./uci";
+import { StringSplitOverWhiteSpace } from "@utils/helpers";
 import type { PromiseableVoid } from "@utils/types";
 
 type UciCommandArgsCreator<T extends UciCommandType> = [
@@ -29,7 +30,7 @@ export function lineReader(
   });
 
   rl.on("line", (line: string) => {
-    const args: string[] = line.trim().split(/\s+/g);
+    const args: string[] = StringSplitOverWhiteSpace(line);
 
     cb(...processUciArgs(args));
   });

@@ -1,5 +1,6 @@
 {
   "name": "chess_engine",
+  "version": "0.1.0-dev",
   "private": true,
   "description": "",
   "scripts": {
@@ -21,13 +22,14 @@
   },
   "homepage": "https://github.com/nicolas377/chess-engine#readme",
   "devDependencies": {
+    "@rollup/plugin-json": "~4.1.0",
     "@rollup/plugin-typescript": "~8.3.3",
     "@types/node": "~18.0.3",
     "@types/tmp": "~0.2.3",
     "@typescript-eslint/eslint-plugin": "~5.30.5",
     "eslint": "~8.19.0",
     "eslint-config-prettier": "~8.5.0",
-    "eslint-import-resolver-typescript": "~3.2.4",
+    "eslint-import-resolver-typescript": "~3.2.5",
     "eslint-plugin-import": "~2.26.0",
     "husky": "~8.0.1",
     "prettier": "~2.7.1",
