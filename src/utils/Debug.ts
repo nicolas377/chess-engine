@@ -1,13 +1,12 @@
 // the code relies on string enum values that match the all caps titles
 export enum DebugLevel {
+  FATAL = "FATAL",
   ERROR = "ERROR",
   WARNING = "WARNING",
   INFO = "INFO",
   DEBUG = "DEBUG",
   TRACE = "TRACE",
 }
-
-type LevelComparisonOperator = ">=" | "<=" | "=" | ">" | "<";
 
 export class Debug {
   private static _logFile: string | undefined;
@@ -38,7 +37,7 @@ export class Debug {
   private static levelCompare(
     left: DebugLevel,
     right: DebugLevel,
-    comparisonType: LevelComparisonOperator
+    comparisonType: ">=" | "<=" | "=" | ">" | "<"
   ): boolean {
     const allLevelsInOrder: DebugLevel[] = [
       DebugLevel.ERROR,
@@ -83,5 +82,10 @@ export class Debug {
 
   public static error(message: string): void {
     Debug.logHandler(message, DebugLevel.ERROR);
+  }
+
+  public static fatal(message: string): never {
+    Debug.logHandler(message, DebugLevel.FATAL);
+    process.exit(1);
   }
 }

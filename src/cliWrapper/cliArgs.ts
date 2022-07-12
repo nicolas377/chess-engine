@@ -1,7 +1,8 @@
 import { argv, exit as ProcessExit } from "process";
 import { version } from "../../package.json";
 import { DebugLevel } from "@utils/Debug";
-import { ArrayAt, ObjectKeys } from "@utils/helpers";
+import { ValidationError } from "@utils/errors";
+import { ArrayAt, ArrayIncludes, ObjectKeys } from "@utils/helpers";
 
 enum Arguments {
   VERSION = "VERSION",
@@ -24,7 +25,7 @@ enum ArgumentDescriptions {
   LOG_LEVEL = "Sets the log level.",
 }
 
-enum ArgTokenExtraTypes {
+const enum ArgTokenExtraTypes {
   CONTEXT_VALUE = "CONTEXT_VALUE",
 }
 
@@ -72,7 +73,7 @@ class CliArgumentsSingleton implements ConfigOptions {
     }
   }
 
-  private getContextValueGetter(
+  private createGetContextValue(
     addSkippedIndex: (index: number) => void
   ): (rawArgs: readonly string[], flagValueIndex: number) => string {
     return function (
@@ -120,7 +121,7 @@ class CliArgumentsSingleton implements ConfigOptions {
       const flag: string = _value.includes("=") ? _value.split("=")[0] : _value;
       const arg: Arguments | "UNKNOWN" =
         this.parseRawCommand(flag) ?? "UNKNOWN";
-      const getContextValue = this.getContextValueGetter(addSkippedIndex);
+      const getContextValue = this.createGetContextValue(addSkippedIndex);
 
       switch (arg) {
         case Arguments.HELP: {
@@ -165,37 +166,44 @@ class CliArgumentsSingleton implements ConfigOptions {
 
   private validateArgTokens(argTokens: readonly TopLevelArgToken[]): void {
     const argTokenTypes = new Set<ArgTokenType>();
-    const ValidationError = (message: string): never => {
-      throw new Error(`Error while validating arguments: ${message}`);
-    };
 
     for (const argToken of argTokens) {
       switch (argToken.type) {
         case Arguments.VERSION:
         case Arguments.HELP:
+          break;
         case Arguments.DEBUG:
+          if (argToken.contextValue)
+            new ValidationError(
+              "debug flag cannot have a context value"
+            ).throw();
           break;
         case Arguments.LOG_LEVEL: {
           const debugLevelKeys = ObjectKeys(DebugLevel);
 
           if (
-            !debugLevelKeys.includes(
-              argToken.contextValue?.data.toUpperCase() as typeof debugLevelKeys[number]
+            !ArrayIncludes(
+              debugLevelKeys,
+              argToken.contextValue?.data.toUpperCase()
             )
           )
-            ValidationError(`Unknown log level ${argToken.contextValue?.data}`);
+            new ValidationError(
+              `Unknown log level ${argToken.contextValue?.data}`
+            ).throw();
           break;
         }
         default:
-          ValidationError(
+          new ValidationError(
             `Unknown argument token type: ${
               (argToken as TopLevelArgToken).type
             }`
-          );
+          ).throw();
       }
 
       if (argTokenTypes.has(argToken.type)) {
-        ValidationError(`Duplicate argument ${argToken.data} found`);
+        new ValidationError(
+          `Duplicate argument ${argToken.data} found`
+        ).throw();
       }
 
       argTokenTypes.add(argToken.type);

@@ -14,15 +14,27 @@ export function ObjectHasOwn<RecordKeys extends string>(
   return Object.prototype.hasOwnProperty.call(record, key);
 }
 
-export function ArrayAt<T>(arr: readonly T[], index: number): T | undefined {
+// modified version of https://github.com/tc39/proposal-relative-indexing-method#polyfill
+export function ArrayAt<T>(
+  arr: readonly T[],
+  targetIndex: number
+): T | undefined {
   const { length: arrLength } = arr;
 
   // ToInteger() abstract op
-  index = Math.trunc(index);
+  targetIndex = Math.trunc(targetIndex);
   // Allow negative indexing from the end
-  if (index < 0) index += arrLength;
+  if (targetIndex < 0) targetIndex += arrLength;
   // OOB access is guaranteed to return undefined
-  if (index < 0 || index >= arrLength) return undefined;
+  if (targetIndex < 0 || targetIndex >= arrLength) return undefined;
   // Otherwise, this is just normal property access
-  return arr[index];
+  return arr[targetIndex];
+}
+
+// just a type checking wrapper over Array#includes
+export function ArrayIncludes<T>(
+  arr: readonly T[],
+  value: unknown
+): value is T {
+  return arr.includes(value as T);
 }
