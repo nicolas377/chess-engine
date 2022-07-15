@@ -1,3 +1,5 @@
+import { addListener as ProcessAddListener } from "node:process";
+
 export function StringSplitOverWhiteSpace(str: string): string[] {
   return str.trim().split(/\s+/g);
 }

@@ -10,7 +10,11 @@ const config = {
     file: "dist/index.js",
     format: "cjs",
   },
-  plugins: [external(), typescript(), json({ preferConst: true })],
+  plugins: [
+    external(),
+    typescript({ tsconfig: "./tsconfig.rollup.json" }),
+    json({ preferConst: true }),
+  ],
 };
 
 export default config;

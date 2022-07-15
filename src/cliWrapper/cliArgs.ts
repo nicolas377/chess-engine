@@ -1,7 +1,7 @@
-import { argv, exit as ProcessExit } from "process";
+import { argv } from "process";
 import { version } from "../../package.json";
 import { DebugLevel } from "@utils/Debug";
-import { ValidationError } from "@utils/errors";
+import { GracefulExitError, ValidationError } from "@utils/errors";
 import { ArrayAt, ArrayIncludes, ObjectKeys } from "@utils/helpers";
 
 enum Arguments {
@@ -51,9 +51,7 @@ class CliArgumentsSingleton implements ConfigOptions {
   private static _instance: CliArgumentsSingleton | undefined;
 
   public static getInstance(): CliArgumentsSingleton {
-    if (!CliArgumentsSingleton._instance) {
-      CliArgumentsSingleton._instance = new CliArgumentsSingleton();
-    }
+    CliArgumentsSingleton._instance ??= new CliArgumentsSingleton();
 
     return CliArgumentsSingleton._instance;
   }
@@ -84,11 +82,10 @@ class CliArgumentsSingleton implements ConfigOptions {
       let contextValue: string | undefined;
 
       if (flagValue?.includes("=")) {
-        contextValue = ArrayAt(flagValue.split("="), 1);
-        if (contextValue?.startsWith('"') && contextValue.endsWith('"')) {
-          // strip quotes
+        // strip wrapping quotes when present
+        if (flagValue?.startsWith('"') && flagValue.endsWith('"'))
           contextValue = contextValue?.slice(1, -1);
-        }
+        else contextValue = ArrayAt(flagValue.split("="), 1);
       } else {
         contextValue = ArrayAt(rawArgs, flagValueIndex + 1);
         if (contextValue !== undefined) addSkippedIndex(flagValueIndex + 1);
@@ -102,14 +99,14 @@ class CliArgumentsSingleton implements ConfigOptions {
     rawArgs: readonly string[]
   ): Generator<TopLevelArgToken, void, unknown> {
     const { addSkippedIndex, indexShouldBeSkipped } = (() => {
-      const skippedArgIndices = new Set<number>();
+      const _skippedArgIndices = new Set<number>();
 
       return {
         addSkippedIndex(index: number): void {
-          skippedArgIndices.add(index);
+          _skippedArgIndices.add(index);
         },
         indexShouldBeSkipped(index: number): boolean {
-          return skippedArgIndices.has(index);
+          return _skippedArgIndices.has(index);
         },
       };
     })();
@@ -137,12 +134,12 @@ class CliArgumentsSingleton implements ConfigOptions {
           }
 
           console.log(message.trim());
-          ProcessExit(0);
+          new GracefulExitError().throw();
         }
         // eslint-disable-next-line no-fallthrough
         case Arguments.VERSION:
           console.log(`Engine v${version}`);
-          ProcessExit(0);
+          new GracefulExitError().throw();
         // eslint-disable-next-line no-fallthrough
         case Arguments.DEBUG:
           yield {
@@ -178,20 +175,17 @@ class CliArgumentsSingleton implements ConfigOptions {
               "debug flag cannot have a context value"
             ).throw();
           break;
-        case Arguments.LOG_LEVEL: {
-          const debugLevelKeys = ObjectKeys(DebugLevel);
-
+        case Arguments.LOG_LEVEL:
           if (
             !ArrayIncludes(
-              debugLevelKeys,
+              ObjectKeys(DebugLevel),
               argToken.contextValue?.data.toUpperCase()
             )
           )
             new ValidationError(
-              `Unknown log level ${argToken.contextValue?.data}`
+              `Unknown log level ${argToken.contextValue?.data ?? "undefined"}`
             ).throw();
           break;
-        }
         default:
           new ValidationError(
             `Unknown argument token type: ${

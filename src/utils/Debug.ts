@@ -1,3 +1,9 @@
+import { writeFileSync } from "node:fs";
+import { resolve as ResolvePath } from "node:path";
+import { exit as ProcessExit } from "node:process";
+import { file } from "tmp-promise";
+import { addTeardownCallback, runTeardownCallbacks } from "./teardown";
+
 // the code relies on string enum values that match the all caps titles
 export enum DebugLevel {
   FATAL = "FATAL",
@@ -8,23 +14,42 @@ export enum DebugLevel {
   TRACE = "TRACE",
 }
 
+async function getLogFilePath(): Promise<string> {
+  const { path: logFile }: { path: string } = await file({
+    prefix: "engine-log",
+    keep: true,
+  });
+
+  return ResolvePath(logFile);
+}
+
 export class Debug {
   private static _logFile: string | undefined;
-  private static _level: DebugLevel = DebugLevel.DEBUG;
+  private static _logs: string[] = [];
+  private static _stdoutLevel: DebugLevel = DebugLevel.WARNING;
 
-  public static setLogFile(logFile: string): void {
-    Debug._logFile = logFile;
-  }
-  public static setLevel(level: DebugLevel) {
-    Debug._level = level;
+  public static setStdoutLevel(level: DebugLevel) {
+    Debug._stdoutLevel = level;
   }
 
-  private static logHandler(message: string, level: DebugLevel): void {
-    if (Debug.levelCompare(Debug._level, level, ">=")) {
-      const timestamp = `${Date.now()}`;
+  public static setupTeardown(): void {
+    const exitHandler = (): void => {
+      if (Debug._logFile) writeFileSync(Debug._logFile, Debug._logs.join("\n"));
+    };
 
-      console.log(`${timestamp} [${level}]: ${message}`);
+    addTeardownCallback(exitHandler);
+  }
+
+  private static async logHandler(
+    message: string,
+    level: DebugLevel
+  ): Promise<void> {
+    Debug._logFile ??= await getLogFilePath();
+
+    if (Debug.levelCompare(Debug._stdoutLevel, level, "<=")) {
+      console.log(`[${level}]: ${message}`);
     }
+    Debug._logs.push(`${Date.now()} [${level}]: ${message}\n`);
   }
 
   /**
@@ -40,6 +65,7 @@ export class Debug {
     comparisonType: ">=" | "<=" | "=" | ">" | "<"
   ): boolean {
     const allLevelsInOrder: DebugLevel[] = [
+      DebugLevel.FATAL,
       DebugLevel.ERROR,
       DebugLevel.WARNING,
       DebugLevel.INFO,
@@ -84,8 +110,11 @@ export class Debug {
     Debug.logHandler(message, DebugLevel.ERROR);
   }
 
-  public static fatal(message: string): never {
-    Debug.logHandler(message, DebugLevel.FATAL);
-    process.exit(1);
+  public static async fatal(message: string): Promise<never> {
+    await Debug.logHandler(message, DebugLevel.FATAL);
+    console.log(`Fatal error: check the log file for more information.`);
+    console.log(`Log file: ${Debug._logFile}`);
+    runTeardownCallbacks();
+    ProcessExit(1);
   }
 }
