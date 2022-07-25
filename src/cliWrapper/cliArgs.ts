@@ -1,5 +1,5 @@
 import { ValidationError } from "@utils/errors";
-import { ArrayAt, ObjectEntries } from "@utils/helpers";
+import { ObjectEntries } from "@utils/helpers";
 
 const enum Arguments {
   VERSION,
@@ -40,6 +40,8 @@ interface ConfigOptions {
 }
 
 function parseRawFlag(flag: string): Arguments | undefined {
+  // TODO: document the log levels in jsdoc comments on the log functions
+  // TODO: start logging here
   switch (flag) {
     case "--version":
     case "-v":
@@ -54,7 +56,8 @@ function parseRawFlag(flag: string): Arguments | undefined {
   }
 }
 
-function getContextValue(
+// uncomment this and the stuff in parseArgTokens for arguments that take context values
+/* function getContextValue(
   rawArgs: readonly string[],
   flagValueIndex: number,
   addSkippedIndex: (index: number) => void
@@ -73,18 +76,21 @@ function getContextValue(
   }
 
   return contextValue ?? "";
-}
+} */
 
 function* parseArgTokens(
   rawArgs: readonly string[]
 ): Generator<TopLevelArgToken, void> {
-  const { addSkippedIndex, indexShouldBeSkipped } = (() => {
+  const {
+    // addSkippedIndex,
+    indexShouldBeSkipped,
+  } = (() => {
     const _skippedArgIndices = new Set<number>();
 
     return {
-      addSkippedIndex(index: number): void {
-        _skippedArgIndices.add(index);
-      },
+      // addSkippedIndex(index: number): void {
+      //   _skippedArgIndices.add(index);
+      // },
       indexShouldBeSkipped(index: number): boolean {
         return _skippedArgIndices.has(index);
       },
@@ -123,7 +129,7 @@ function validateArgTokens(argTokens: TopLevelArgToken[]): void {
 
   for (const argToken of argTokens) {
     if (argTokenTypes.has(argToken.type)) {
-      new ValidationError("Duplicate argument found").throw();
+      errorMakingArgs ??= new ValidationError("Duplicate argument found");
     }
 
     argTokenTypes.add(argToken.type);
@@ -162,7 +168,14 @@ class MainCliArguments implements ConfigOptions {
   }
 }
 
-export const cliArgs = new MainCliArguments();
+export let errorMakingArgs: { throw(): never } | undefined;
+
+let _cliArgs: MainCliArguments | undefined;
+
+export function cliArgs(): MainCliArguments {
+  _cliArgs ??= new MainCliArguments();
+  return _cliArgs;
+}
 
 export function logHelp(): void {
   const newLine = "\n";

@@ -1,4 +1,4 @@
-import { logFatal, logInfo } from "./Debug";
+import { logError, logInfo } from "./Debug";
 import { ExitProcess } from "./helpers";
 
 const isCustomError = Symbol("isCustomError");
@@ -50,8 +50,15 @@ class BaseCustomError<T extends ErrorCodes>
     this.description = ErrorDescriptions[code];
   }
 
+  toString(): string {
+    return `${this.name}: ${this.description} (${this.message})\n${
+      this.stack?.split("\n").splice(1).join("\n") ?? ""
+    }`;
+  }
+
   throw(): never {
-    logFatal(this.toString());
+    console.log(this.toString());
+    logError(this.toString());
   }
 }
 
@@ -66,29 +73,22 @@ function makeCustomErrorWithCode<T extends ErrorCodes>(code: T) {
   };
 }
 
-export function errorIsCustom(
-  error: unknown
-): error is BaseCustomError<ErrorCodes> {
-  return error instanceof BaseCustomError;
-}
-
 export class GracefulExitError
   extends Error
   implements CustomError<ErrorCodes.GRACEFUL_EXIT>
 {
-  readonly [isCustomError]: true = true;
+  readonly [isCustomError] = true;
   readonly code = ErrorCodes.GRACEFUL_EXIT;
   readonly name = ErrorNames[ErrorCodes.GRACEFUL_EXIT];
   readonly description = ErrorDescriptions[ErrorCodes.GRACEFUL_EXIT];
 
-  constructor(readonly exitImmediately = false) {
+  constructor() {
     super("Graceful exit");
   }
 
   throw(): never {
     logInfo("Gracefully exiting...");
-    if (this.exitImmediately) process.exit(0);
-    else ExitProcess(0);
+    ExitProcess(0);
   }
 }
 export const UnknownError = makeCustomErrorWithCode(ErrorCodes.UNKNOWN);

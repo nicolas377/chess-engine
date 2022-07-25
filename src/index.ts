@@ -1,8 +1,8 @@
 import { version } from "../package.json";
-import { cliArgs, logHelp } from "./cliWrapper/cliArgs";
+import { cliArgs, errorMakingArgs, logHelp } from "./cliWrapper/cliArgs";
 import { lineReader } from "./cliWrapper/stdinReader";
 import { setupTeardown as setupDebugTeardown } from "@utils/Debug";
-import { ExitProcess } from "@utils/helpers";
+import { GracefulExitError } from "@utils/errors";
 
 // A gathering place for all teardown functions.
 function setupTeardown(): void {
@@ -12,18 +12,18 @@ function setupTeardown(): void {
 async function main(): Promise<void> {
   setupTeardown();
 
-  if (cliArgs.help) {
+  errorMakingArgs?.throw();
+
+  if (cliArgs().help) {
     logHelp();
-    ExitProcess(0);
+    new GracefulExitError().throw();
   }
-  if (cliArgs.version) {
+  if (cliArgs().version) {
     console.log(`Engine v${version}`);
-    ExitProcess(0);
+    new GracefulExitError().throw();
   }
 
-  lineReader((type, data) => {
-    // TODO
-  });
+  lineReader(() => {});
 
   // chess engine to use: https://www.npmjs.com/package/js-chess-engine
 }
