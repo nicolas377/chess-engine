@@ -1,6 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as ResolvePath } from "node:path";
+import { cliArgs } from "../cliWrapper/cliArgs";
 import { ExitProcess } from "./helpers";
 import { addTeardownCallback } from "./teardown";
 
@@ -18,7 +19,13 @@ export enum DebugLevel {
 const logs: string[] = [];
 
 function logMessage(message: string, level: DebugLevel): void {
-  logs.push(`[${new Date(Date.now()).toISOString()}] (${level}): ${message}`);
+  const outputMessage = `[${new Date(
+    Date.now()
+  ).toISOString()}] (${level}): ${message}`;
+
+  if (cliArgs().debug && level !== DebugLevel.OUTPUT)
+    console.log(outputMessage);
+  logs.push(outputMessage);
 }
 
 export function setupTeardown(): void {
