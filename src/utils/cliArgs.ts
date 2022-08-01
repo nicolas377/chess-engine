@@ -1,11 +1,5 @@
-import { Arguments } from "../types";
-import {
-  DebugLevel,
-  logInfo,
-  logTrace,
-  logWarning,
-  stringifyJsonData,
-} from "@utils/Debug";
+import { Arguments, DebugLevel } from "../types";
+import { logInfo, logTrace, logWarning, stringifyJsonData } from "@utils/Debug";
 import { ArgumentParseError, ValidationError } from "@utils/errors";
 import { ArrayAt, ArrayIncludes, ObjectEntries } from "@utils/helpers";
 
@@ -101,24 +95,22 @@ function getContextValue(
   }
 
   if (contextValue === undefined)
-    new ArgumentParseError(
-      "Missing context value where one was expected"
-    ).throw();
+    throwError(
+      new ArgumentParseError("Missing context value where one was expected")
+    );
 
-  // TS purposefully doesn't narrow using functions that return never, but we know .throw() will never return
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return contextValue!;
+  return contextValue;
 }
 
 function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
   logInfo("Parsing arguments");
   logTrace(`Parsing arguments from ${stringifyJsonData(rawArgs)}`);
 
-  const { add: addSkippedIndex, has: indexShouldBeSkipped } = new Set<number>();
+  const skippedIndices = new Set<number>();
   const allArgTokens: TopLevelArgToken[] = [];
 
   for (const [index, _value] of rawArgs.entries()) {
-    if (indexShouldBeSkipped(index)) continue;
+    if (skippedIndices.has(index)) continue;
 
     // support for --flag=value
     const flag: string = _value.includes("=") ? _value.split("=")[0] : _value;
@@ -148,7 +140,11 @@ function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
         logTrace("Debug argument parsed");
         break;
       case Arguments.LOG_LEVEL: {
-        const contextValue = getContextValue(rawArgs, index, addSkippedIndex);
+        const contextValue = getContextValue(
+          rawArgs,
+          index,
+          skippedIndices.add
+        );
         allArgTokens.push({
           type: arg,
           contextValue: {
@@ -209,10 +205,10 @@ function validateArgTokens(argTokens: TopLevelArgToken[]): void {
 export let cliArgsHadError = false;
 
 class MainCliArguments implements ConfigOptions {
-  public readonly version: boolean;
-  public readonly help: boolean;
-  public readonly debug: boolean;
-  public readonly logLevel: DebugLevel;
+  public readonly version: boolean = false;
+  public readonly help: boolean = false;
+  public readonly debug: boolean = false;
+  public readonly logLevel: DebugLevel = DebugLevel.TRACE;
 
   constructor() {
     const argTokens: TopLevelArgToken[] = parseArgTokens(process.argv.slice(2));
@@ -237,11 +233,6 @@ class MainCliArguments implements ConfigOptions {
             argToken.contextValue!.data!.toUpperCase() as DebugLevel;
       }
     }
-
-    this.version ??= false;
-    this.help ??= false;
-    this.debug ??= false;
-    this.logLevel ??= DebugLevel.TRACE;
   }
 }
 

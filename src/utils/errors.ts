@@ -1,4 +1,3 @@
-import { cliArgsHadError } from "./cliArgs";
 import { logError, logInfo } from "@utils/Debug";
 import { ExitProcess } from "@utils/helpers";
 
@@ -63,11 +62,7 @@ class BaseCustomError<T extends ErrorCodes>
 
   throw(): never {
     console.log(this.toString());
-    if (!cliArgsHadError) logError(this.toString());
-    else {
-      console.log(this.toString());
-      ExitProcess(1);
-    }
+    logError(this.toString());
   }
 }
 

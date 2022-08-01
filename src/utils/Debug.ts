@@ -1,22 +1,12 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as ResolvePath } from "node:path";
+import { DebugLevel } from "../types";
 import { ExitProcess } from "@utils/helpers";
 import { addTeardownCallback } from "@utils/teardown";
 
 // Warning! Do not rely on cliArgs anywhere in this file where it could possibly not have been created yet.
 // It will cause circular calls and crash!
-
-// Warning: the values of the enum must be the same as the string values of the enum
-export enum DebugLevel {
-  FATAL = "FATAL",
-  ERROR = "ERROR",
-  WARNING = "WARNING",
-  OUTPUT = "OUTPUT",
-  INFO = "INFO",
-  DEBUG = "DEBUG",
-  TRACE = "TRACE",
-}
 
 interface Log {
   date: string;
@@ -35,8 +25,12 @@ function compareLogLevel(
   RHS: DebugLevel,
   operator: ">" | "<" | ">=" | "<=" | "="
 ): boolean {
-  // this needs to be flipped, like it currently is, for indexing to work as intended
-  const { indexOf: indexOfLevel }: DebugLevel[] = [
+  // We can't object destructure the array for the indexOf() method,
+  // as it messes with this bindings needed to make indexOf() work.
+
+  // The array element order needs to be from least to most important
+  // in order for indexing to work as intended.
+  const debugLevels: DebugLevel[] = [
     DebugLevel.TRACE,
     DebugLevel.DEBUG,
     DebugLevel.INFO,
@@ -46,8 +40,8 @@ function compareLogLevel(
     DebugLevel.FATAL,
   ];
 
-  const LHSIndex = indexOfLevel(LHS);
-  const RHSIndex = indexOfLevel(RHS);
+  const LHSIndex = debugLevels.indexOf(LHS);
+  const RHSIndex = debugLevels.indexOf(RHS);
 
   switch (operator) {
     case ">":
@@ -64,7 +58,6 @@ function compareLogLevel(
 }
 
 function logMessage(level: DebugLevel, message: string): void {
-  console.log(`(${level}): ${message}`);
   if (compareLogLevel(level, minLogLevel, ">="))
     logs.push({
       date: new Date(Date.now()).toISOString(),

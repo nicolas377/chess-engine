@@ -2,7 +2,6 @@ import { version } from "../package.json";
 import { lineReader } from "./cliWrapper/stdinReader";
 import { cliArgs, logHelp } from "@utils/cliArgs";
 import {
-  DebugLevel,
   logInfo,
   setMinLogLevel,
   setupTeardown as setupDebugTeardown,
@@ -16,7 +15,6 @@ function setupTeardown(): void {
 }
 
 async function main(): Promise<void> {
-  // TODO: this is probably infinite looping inside of the cliArgs() call
   // initialize cliArgs before an infinite loop occurs somewhere
   const args = cliArgs();
   setupTeardown();
@@ -31,10 +29,8 @@ async function main(): Promise<void> {
     console.log(`Engine v${version}`);
     new GracefulExitError().throw();
   }
-  if (args.logLevel !== DebugLevel.TRACE) {
-    logInfo(`Setting log level to ${args.logLevel}`);
-    setMinLogLevel(args.logLevel);
-  }
+  logInfo(`Setting log level to ${args.logLevel}`);
+  setMinLogLevel(args.logLevel);
 
   lineReader(() => {});
 
