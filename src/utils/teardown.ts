@@ -1,4 +1,4 @@
-import { exit as ProcessExit } from "node:process";
+import { exit as ProcessExitRaw } from "node:process";
 
 const exitCodes = [
   // graceful exit
@@ -28,5 +28,5 @@ export function runTeardownCallbacks(calledByProcess = false): void {
   for (const cb of teardownCallbacks) {
     cb();
   }
-  if (calledByProcess) ProcessExit();
+  if (calledByProcess) ProcessExitRaw();
 }

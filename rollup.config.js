@@ -7,6 +7,7 @@ import external from "rollup-plugin-node-externals";
 const config = {
   input: "src/index.ts",
   output: {
+    sourcemap: true,
     file: "dist/index.js",
     format: "cjs",
   },

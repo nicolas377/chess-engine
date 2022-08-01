@@ -1,5 +1,5 @@
 import { exit as RawProcessExit } from "node:process";
-import { runTeardownCallbacks } from "./teardown";
+import { runTeardownCallbacks } from "@utils/teardown";
 
 export type PromiseableVoid = void | Promise<void>;
 
@@ -32,9 +32,9 @@ export function ArrayAt<T>(
   targetIndex: number
 ): T | undefined {
   const { length: arrLength } = arr;
+  const { trunc: ToInteger } = Math;
 
-  // ToInteger() abstract op
-  targetIndex = Math.trunc(targetIndex);
+  targetIndex = ToInteger(targetIndex);
   // Allow negative indexing from the end
   if (targetIndex < 0) targetIndex += arrLength;
   // OOB access is guaranteed to return undefined
@@ -43,7 +43,7 @@ export function ArrayAt<T>(
   return arr[targetIndex];
 }
 
-// just a type checking wrapper over Array#includes
+// just a type narrowing wrapper over Array#includes
 export function ArrayIncludes<T>(
   arr: readonly T[],
   value: unknown

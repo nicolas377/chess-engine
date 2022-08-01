@@ -1,27 +1,32 @@
-import { logError, logInfo } from "./Debug";
-import { ExitProcess } from "./helpers";
+import { cliArgsHadError } from "./cliArgs";
+import { logError, logInfo } from "@utils/Debug";
+import { ExitProcess } from "@utils/helpers";
 
 const isCustomError = Symbol("isCustomError");
 
 const enum ErrorCodes {
   VALIDATION_ERROR = "0001",
+  ARGUMENT_PARSE_ERROR = "0002",
   GRACEFUL_EXIT = "9998",
-  UNKNOWN = "9999",
+  GENERAL = "9999",
 }
 
 // basically an enum, can't use computed properties in enums
 const ErrorNames: Record<ErrorCodes, string> = {
   [ErrorCodes.VALIDATION_ERROR]: "ValidationError",
+  [ErrorCodes.ARGUMENT_PARSE_ERROR]: "ArgumentParseError",
   [ErrorCodes.GRACEFUL_EXIT]: "GracefulExit",
-  [ErrorCodes.UNKNOWN]: "UnknownError",
+  [ErrorCodes.GENERAL]: "GeneralError",
 };
 
 // same as above
 const ErrorDescriptions: Record<ErrorCodes, string> = {
   [ErrorCodes.VALIDATION_ERROR]:
     "Something went wrong when validating input through CLI flags.",
+  [ErrorCodes.ARGUMENT_PARSE_ERROR]:
+    "Something went wrong when parsing CLI flags.",
   [ErrorCodes.GRACEFUL_EXIT]: "The program was asked to exit gracefully.",
-  [ErrorCodes.UNKNOWN]: "An unknown error occurred.",
+  [ErrorCodes.GENERAL]: "An error occurred.",
 };
 
 interface CustomError<T extends ErrorCodes> {
@@ -58,7 +63,11 @@ class BaseCustomError<T extends ErrorCodes>
 
   throw(): never {
     console.log(this.toString());
-    logError(this.toString());
+    if (!cliArgsHadError) logError(this.toString());
+    else {
+      console.log(this.toString());
+      ExitProcess(1);
+    }
   }
 }
 
@@ -87,11 +96,14 @@ export class GracefulExitError
   }
 
   throw(): never {
-    logInfo("Gracefully exiting...");
+    logInfo("Gracefully exiting");
     ExitProcess(0);
   }
 }
-export const UnknownError = makeCustomErrorWithCode(ErrorCodes.UNKNOWN);
+export const ArgumentParseError = makeCustomErrorWithCode(
+  ErrorCodes.ARGUMENT_PARSE_ERROR
+);
+export const GeneralError = makeCustomErrorWithCode(ErrorCodes.GENERAL);
 export const ValidationError = makeCustomErrorWithCode(
   ErrorCodes.VALIDATION_ERROR
 );
