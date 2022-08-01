@@ -1,14 +1,8 @@
-import { logError, logInfo } from "@utils/Debug";
-import { ExitProcess } from "@utils/helpers";
+import { logError, logInfo } from "./Debug";
+import { ExitProcess } from "./helpers";
+import { ErrorCodes } from "types";
 
 const isCustomError = Symbol("isCustomError");
-
-const enum ErrorCodes {
-  VALIDATION_ERROR = "0001",
-  ARGUMENT_PARSE_ERROR = "0002",
-  GRACEFUL_EXIT = "9998",
-  GENERAL = "9999",
-}
 
 // basically an enum, can't use computed properties in enums
 const ErrorNames: Record<ErrorCodes, string> = {

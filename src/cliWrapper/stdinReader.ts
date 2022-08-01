@@ -1,10 +1,12 @@
+import { stdin as processStdin, stdout as processStdout } from "node:process";
 import { createInterface } from "node:readline";
 import {
   processUciArgs,
   UciCommandType,
   UciCommandTypeAssociatedData,
 } from "./uci";
-import { PromiseableVoid, StringSplitOverWhiteSpace } from "@utils/helpers";
+import { PromiseableVoid } from "types";
+import { StringSplitOverWhiteSpace } from "utils";
 
 type UciCommandArgsCreator<T extends UciCommandType> = [
   type: T,
@@ -19,12 +21,11 @@ export type UnknownUciCommandArgs =
 export function lineReader(
   cb: (...args: UnknownUciCommandArgs) => PromiseableVoid
 ): void {
-  // never exit the program
-  process.stdin.resume();
+  processStdin.resume();
 
   const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
+    input: processStdin,
+    output: processStdout,
     terminal: false,
   });
 

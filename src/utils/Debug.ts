@@ -1,9 +1,9 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as ResolvePath } from "node:path";
-import { DebugLevel } from "../types";
-import { ExitProcess } from "@utils/helpers";
-import { addTeardownCallback } from "@utils/teardown";
+import { ExitProcess } from "./helpers";
+import { addTeardownCallback } from "./teardown";
+import { DebugLevel } from "types";
 
 // Warning! Do not rely on cliArgs anywhere in this file where it could possibly not have been created yet.
 // It will cause circular calls and crash!

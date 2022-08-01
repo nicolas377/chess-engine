@@ -1,3 +1,5 @@
+export type PromiseableVoid = void | Promise<void>;
+
 export const enum Arguments {
   CONTEXT_VALUE,
   VERSION,
@@ -6,7 +8,14 @@ export const enum Arguments {
   LOG_LEVEL,
 }
 
-// Warning: the values of the enum must be the same as the string values of the enum
+export const enum ErrorCodes {
+  VALIDATION_ERROR = "0001",
+  ARGUMENT_PARSE_ERROR = "0002",
+  GRACEFUL_EXIT = "9998",
+  GENERAL = "9999",
+}
+
+// The values of the enum must be the same as the string values of the enum.
 export enum DebugLevel {
   FATAL = "FATAL",
   ERROR = "ERROR",

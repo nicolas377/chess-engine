@@ -1,7 +1,9 @@
-import { Arguments, DebugLevel } from "../types";
-import { logInfo, logTrace, logWarning, stringifyJsonData } from "@utils/Debug";
-import { ArgumentParseError, ValidationError } from "@utils/errors";
-import { ArrayAt, ArrayIncludes, ObjectEntries } from "@utils/helpers";
+import { argv as processArgv } from "node:process";
+import { version } from "../../package.json";
+import { logInfo, logTrace, logWarning, stringifyJsonData } from "./Debug";
+import { ArgumentParseError, ValidationError } from "./errors";
+import { ArrayAt, ArrayIncludes, ObjectEntries } from "./helpers";
+import { Arguments, DebugLevel } from "types";
 
 type ArgumentsWithoutContext = Exclude<Arguments, Arguments.CONTEXT_VALUE>;
 
@@ -42,6 +44,10 @@ function throwError(error: { throw(): never }): never {
   error.throw();
 }
 
+function logVersion(): void {
+  console.log(`Engine v${version}`);
+}
+
 function logHelp(): void {
   const newLine = "\n";
 
@@ -56,6 +62,7 @@ function logHelp(): void {
     )
     .trim();
 
+  logVersion();
   console.log(message);
 }
 
@@ -113,7 +120,9 @@ function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
     if (skippedIndices.has(index)) continue;
 
     // support for --flag=value
-    const flag: string = _value.includes("=") ? _value.split("=")[0] : _value;
+    const flag: string = _value.includes("=")
+      ? ArrayAt(_value.split("="), 0) ?? ""
+      : _value;
     const arg: Arguments | "UNKNOWN" = parseRawFlag(flag) ?? "UNKNOWN";
 
     logTrace(`Parsing flag ${flag}`);
@@ -211,7 +220,7 @@ class MainCliArguments implements ConfigOptions {
   public readonly logLevel: DebugLevel = DebugLevel.TRACE;
 
   constructor() {
-    const argTokens: TopLevelArgToken[] = parseArgTokens(process.argv.slice(2));
+    const argTokens: TopLevelArgToken[] = parseArgTokens(processArgv.slice(2));
     validateArgTokens(argTokens);
 
     // setting options
@@ -250,4 +259,4 @@ function cliArgs(): MainCliArguments {
   return _cliArgs;
 }
 
-export { logHelp, cliArgs };
+export { logVersion, logHelp, cliArgs };

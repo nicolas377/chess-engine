@@ -1,7 +1,5 @@
 import { exit as RawProcessExit } from "node:process";
-import { runTeardownCallbacks } from "@utils/teardown";
-
-export type PromiseableVoid = void | Promise<void>;
+import { runTeardownCallbacks } from "./teardown";
 
 export function StringSplitOverWhiteSpace(str: string): string[] {
   return str.trim().split(/\s+/g);
@@ -26,7 +24,6 @@ export function ObjectHasOwn<RecordKeys extends string>(
   return Object.prototype.hasOwnProperty.call(record, key);
 }
 
-// modified version of https://github.com/tc39/proposal-relative-indexing-method#polyfill
 export function ArrayAt<T>(
   arr: readonly T[],
   targetIndex: number

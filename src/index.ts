@@ -1,21 +1,22 @@
-import { version } from "../package.json";
 import { lineReader } from "./cliWrapper/stdinReader";
-import { cliArgs, logHelp } from "@utils/cliArgs";
 import {
+  cliArgs,
+  GracefulExitError,
+  logHelp,
   logInfo,
+  logVersion,
   setMinLogLevel,
   setupTeardown as setupDebugTeardown,
-} from "@utils/Debug";
-import { GracefulExitError } from "@utils/errors";
+} from "utils";
 
-// A gathering place for all teardown functions.
 function setupTeardown(): void {
   logInfo("Setting up teardown callbacks");
   setupDebugTeardown();
 }
 
 async function main(): Promise<void> {
-  // initialize cliArgs before an infinite loop occurs somewhere
+  // Argument initialization and caching has to be the first thing that happens.
+  // Otherwise, we cannot guarantee that an infinite loop will not occur.
   const args = cliArgs();
   setupTeardown();
 
@@ -26,10 +27,10 @@ async function main(): Promise<void> {
   }
   if (args.version) {
     logInfo("Version option specified, logging version and exiting");
-    console.log(`Engine v${version}`);
+    logVersion();
     new GracefulExitError().throw();
   }
-  logInfo(`Setting log level to ${args.logLevel}`);
+  logInfo(`Setting log level to "${args.logLevel}"`);
   setMinLogLevel(args.logLevel);
 
   lineReader(() => {});

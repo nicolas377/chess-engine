@@ -1,4 +1,4 @@
-import { exit as ProcessExitRaw } from "node:process";
+import { on as processAddListener, exit as ProcessExitRaw } from "node:process";
 
 const exitCodes = [
   // graceful exit
@@ -17,7 +17,7 @@ type TeardownCallback = () => void;
 const teardownCallbacks: TeardownCallback[] = [];
 
 for (const exitCode of exitCodes) {
-  process.on(exitCode, runTeardownCallbacks.bind(null, true));
+  processAddListener(exitCode, runTeardownCallbacks.bind(null, true));
 }
 
 export function addTeardownCallback(cb: TeardownCallback): void {
