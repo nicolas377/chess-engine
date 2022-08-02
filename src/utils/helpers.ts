@@ -5,21 +5,21 @@ export function StringSplitOverWhiteSpace(str: string): string[] {
   return str.trim().split(/\s+/g);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function ObjectKeys<T extends keyof any>(obj: Record<T, unknown>): T[] {
+export function ObjectKeys<T extends PropertyKey>(
+  obj: Record<T, unknown>
+): T[] {
   return Object.keys(obj) as T[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function ObjectEntries<T extends keyof any, U>(
+export function ObjectEntries<T extends PropertyKey, U>(
   obj: Record<T, U>
 ): [T, U][] {
   return Object.entries(obj) as [T, U][];
 }
 
-export function ObjectHasOwn<RecordKeys extends string>(
+export function ObjectHasOwn<RecordKeys extends PropertyKey>(
   record: Readonly<Record<RecordKeys, unknown>>,
-  key: string
+  key: PropertyKey
 ): key is RecordKeys {
   return Object.prototype.hasOwnProperty.call(record, key);
 }

@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug",
+      "name": "Debug (ts-node)",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "node",
@@ -11,6 +11,12 @@
       "cwd": "${workspaceRoot}",
       "skipFiles": ["<node_internals>/**", "node_modules/**"],
       "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach via Port",
+      "processId": "${command:PickProcess}"
     }
   ]
 }

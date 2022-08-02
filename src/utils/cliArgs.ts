@@ -1,6 +1,12 @@
 import { argv as processArgv } from "node:process";
 import { version } from "../../package.json";
-import { logInfo, logTrace, logWarning, stringifyJsonData } from "./Debug";
+import {
+  logInfo,
+  logTrace,
+  logWarning,
+  outputToConsole,
+  wrapWithQuotes,
+} from "./Debug";
 import { ArgumentParseError, ValidationError } from "./errors";
 import { ArrayAt, ArrayIncludes, ObjectEntries } from "./helpers";
 import { Arguments, DebugLevel } from "types";
@@ -45,7 +51,7 @@ function throwError(error: { throw(): never }): never {
 }
 
 function logVersion(): void {
-  console.log(`Engine v${version}`);
+  outputToConsole(`Engine v${version}`);
 }
 
 function logHelp(): void {
@@ -63,17 +69,23 @@ function logHelp(): void {
     .trim();
 
   logVersion();
-  console.log(message);
+  outputToConsole(message);
 }
 
-function parseRawFlag(flag: string): Arguments | undefined {
+function parseRawFlag(flag: string): ArgumentsWithoutContext | undefined {
+  logInfo("Parsing raw flag", wrapWithQuotes(flag), "to argument type");
+  // Implementation note: Any object's keys are always converted to strings.
+  // Because of that, we have to convert back to the numeric enum value.
   for (const [argument, triggers] of ObjectEntries<
     `${ArgumentsWithoutContext}`,
     string[]
   >(ArgumentTriggers)) {
-    // argument is a string of what is represented in the enum, we have to convert to a number
-    if (triggers.includes(flag)) return +argument;
+    if (triggers.includes(flag)) {
+      logTrace("Found raw flag in triggers of argument", argument);
+      return +argument;
+    }
   }
+  logWarning(undefined, "Raw flag", flag, "isn't parsable");
 }
 
 function getContextValue(
@@ -81,11 +93,11 @@ function getContextValue(
   flagValueIndex: number,
   addSkippedIndex: (index: number) => void
 ): string {
-  logInfo("Getting context value");
-  logTrace(
-    `Getting context value from index ${flagValueIndex} on arguments ${stringifyJsonData(
-      rawArgs
-    )}`
+  logInfo(
+    "Getting context value from index",
+    flagValueIndex,
+    "on arguments",
+    rawArgs
   );
 
   const flagValue: string | undefined = ArrayAt(rawArgs, flagValueIndex);
@@ -110,14 +122,42 @@ function getContextValue(
 }
 
 function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
-  logInfo("Parsing arguments");
-  logTrace(`Parsing arguments from ${stringifyJsonData(rawArgs)}`);
+  logInfo("Parsing arguments", rawArgs);
 
-  const skippedIndices = new Set<number>();
+  const { addSkippedIndex, indexShouldBeSkipped } = (() => {
+    const skippedIndices = new Set<number>();
+
+    return {
+      addSkippedIndex(index: number): void {
+        logInfo("Adding skipped index", index);
+        skippedIndices.add(index);
+      },
+      indexShouldBeSkipped(index: number): boolean {
+        logInfo("Checking if index", index, "should be skipped");
+        const shouldBeSkipped = skippedIndices.has(index);
+
+        if (shouldBeSkipped)
+          logTrace(
+            "Index",
+            index,
+            "should be skipped, it is in the skipped indices set"
+          );
+        else
+          logTrace(
+            "Index",
+            index,
+            "should not be skipped, it is not in the skipped indices set"
+          );
+
+        return shouldBeSkipped;
+      },
+    };
+  })();
+
   const allArgTokens: TopLevelArgToken[] = [];
 
   for (const [index, _value] of rawArgs.entries()) {
-    if (skippedIndices.has(index)) continue;
+    if (indexShouldBeSkipped(index)) continue;
 
     // support for --flag=value
     const flag: string = _value.includes("=")
@@ -125,10 +165,14 @@ function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
       : _value;
     const arg: Arguments | "UNKNOWN" = parseRawFlag(flag) ?? "UNKNOWN";
 
-    logTrace(`Parsing flag ${flag}`);
+    logTrace(
+      "Attempting to parse numeric flag",
+      typeof arg === "string" ? wrapWithQuotes(arg) : arg,
+      "to flag info"
+    );
     switch (arg) {
       case "UNKNOWN":
-        logWarning(`Raw flag ${flag} isn't parsable`);
+        logTrace("Unknown flag found, skipping index", index);
         break;
       case Arguments.HELP:
         allArgTokens.push({
@@ -149,11 +193,7 @@ function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
         logTrace("Debug argument parsed");
         break;
       case Arguments.LOG_LEVEL: {
-        const contextValue = getContextValue(
-          rawArgs,
-          index,
-          skippedIndices.add
-        );
+        const contextValue = getContextValue(rawArgs, index, addSkippedIndex);
         allArgTokens.push({
           type: arg,
           contextValue: {
@@ -162,20 +202,20 @@ function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
           },
         });
         logTrace(
-          `Log level argument parsed with context value ${contextValue}`
+          "Log level argument parsed with context value",
+          wrapWithQuotes(contextValue)
         );
         break;
       }
     }
   }
 
-  logTrace(`Returning tokens: ${stringifyJsonData(allArgTokens)}`);
+  logTrace("Returning tokens:", allArgTokens);
   return allArgTokens;
 }
 
 function validateArgTokens(argTokens: TopLevelArgToken[]): void {
-  logInfo("Validating arg tokens");
-  logTrace(`arg tokens: ${stringifyJsonData(argTokens)}`);
+  logInfo("Validating arg tokens", argTokens);
 
   const argTokenTypes = new Set<Arguments>();
 
@@ -198,13 +238,15 @@ function validateArgTokens(argTokens: TopLevelArgToken[]): void {
           );
 
         if (
-          ArrayIncludes(
+          !ArrayIncludes(
             Object.values(DebugLevel),
             rawContextValue.toUpperCase()
           )
         )
-          new ValidationError(
-            `Provided log level ${rawContextValue} is not a defined log level.`
+          throwError(
+            new ValidationError(
+              `Provided log level ${rawContextValue} is not a defined log level.`
+            )
           );
       }
     }

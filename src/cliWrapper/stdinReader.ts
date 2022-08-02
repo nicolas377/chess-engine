@@ -5,7 +5,7 @@ import {
   UciCommandType,
   UciCommandTypeAssociatedData,
 } from "./uci";
-import { PromiseableVoid } from "types";
+import { Promisable } from "types";
 import { StringSplitOverWhiteSpace } from "utils";
 
 type UciCommandArgsCreator<T extends UciCommandType> = [
@@ -19,7 +19,7 @@ export type UnknownUciCommandArgs =
   | UciCommandArgsCreator<UciCommandType.SECOND>;
 
 export function lineReader(
-  cb: (...args: UnknownUciCommandArgs) => PromiseableVoid
+  cb: (...args: UnknownUciCommandArgs) => Promisable<void>
 ): void {
   processStdin.resume();
 

@@ -7,6 +7,7 @@ import {
   logVersion,
   setMinLogLevel,
   setupTeardown as setupDebugTeardown,
+  wrapWithQuotes,
 } from "utils";
 
 function setupTeardown(): void {
@@ -15,11 +16,14 @@ function setupTeardown(): void {
 }
 
 async function main(): Promise<void> {
+  setupTeardown();
   // Argument initialization and caching has to be the first thing that happens.
+  // Teardown setup is the only exception because it could be called if cliArgs throws.
   // Otherwise, we cannot guarantee that an infinite loop will not occur.
   const args = cliArgs();
-  setupTeardown();
 
+  logInfo("Setting log level to", wrapWithQuotes(args.logLevel));
+  setMinLogLevel(args.logLevel);
   if (args.help) {
     logInfo("Help option specified, logging help and exiting");
     logHelp();
@@ -30,12 +34,8 @@ async function main(): Promise<void> {
     logVersion();
     new GracefulExitError().throw();
   }
-  logInfo(`Setting log level to "${args.logLevel}"`);
-  setMinLogLevel(args.logLevel);
 
   lineReader(() => {});
-
-  // chess engine to use: https://www.npmjs.com/package/js-chess-engine
 }
 
 main();

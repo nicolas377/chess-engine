@@ -8,11 +8,20 @@ import { DebugLevel } from "types";
 // Warning! Do not rely on cliArgs anywhere in this file where it could possibly not have been created yet.
 // It will cause circular calls and crash!
 
+type JSONable =
+  | string
+  | number
+  | Date
+  | unknown[]
+  | readonly unknown[]
+  | { [key: string]: JSONable };
+
 interface Log {
   date: string;
   level: DebugLevel;
   message: string;
 }
+
 const logs: Log[] = [];
 let minLogLevel: DebugLevel = DebugLevel.TRACE;
 
@@ -30,16 +39,15 @@ function compareLogLevel(
 
   // The array element order needs to be from least to most important
   // in order for indexing to work as intended.
-  const debugLevels: DebugLevel[] = [
+  const debugLevels = [
     DebugLevel.TRACE,
-    DebugLevel.DEBUG,
     DebugLevel.INFO,
     DebugLevel.OUTPUT,
     DebugLevel.WARNING,
-    DebugLevel.ERROR,
     DebugLevel.FATAL,
-  ];
+  ] as const;
 
+  // We also ensure that debugLevels contains all the levels, and nothing else in the indexOf() calls.
   const LHSIndex = debugLevels.indexOf(LHS);
   const RHSIndex = debugLevels.indexOf(RHS);
 
@@ -57,13 +65,31 @@ function compareLogLevel(
   }
 }
 
-function logMessage(level: DebugLevel, message: string): void {
-  if (compareLogLevel(level, minLogLevel, ">="))
-    logs.push({
-      date: new Date(Date.now()).toISOString(),
-      level,
-      message,
-    });
+function stringifyMessage(messageComponents: JSONable[]): string {
+  return messageComponents
+    .reduce<string[]>((acc, component) => {
+      const stringifiedComponent: string =
+        typeof component === "string"
+          ? component
+          : typeof component === "number"
+          ? component.toString()
+          : component instanceof Date
+          ? component.toISOString()
+          : JSON.stringify(component, (key, value) =>
+              value instanceof Date ? value.toISOString() : value
+            );
+
+      return acc.concat(stringifiedComponent);
+    }, [])
+    .join(" ");
+}
+
+function logMessage(level: DebugLevel, messageComponents: JSONable[]): void {
+  logs.push({
+    date: new Date(Date.now()).toISOString(),
+    level,
+    message: stringifyMessage(messageComponents),
+  });
 }
 
 export function setupTeardown(): void {
@@ -76,48 +102,42 @@ export function setupTeardown(): void {
     console.log(`Log file: ${logFile}`);
     writeFileSync(
       logFile,
-      logs.reduce<string>(
-        (acc, { message, date, level }) =>
-          compareLogLevel(level, minLogLevel, ">=")
-            ? acc + `[${date}] (${level}): ${message}\n`
-            : acc,
-        ""
-      )
+      logs.reduce<string>((acc, { message, date, level }) => {
+        if (compareLogLevel(level, minLogLevel, ">=")) {
+          return acc + `[${date}] (${level}): ${message}\n`;
+        } else return acc;
+      }, "")
     );
   });
 }
 
-export function outputToConsole(message: string): void {
-  console.log(message);
-  logMessage(DebugLevel.OUTPUT, message);
+export function outputToConsole(...messageComponents: JSONable[]): void {
+  console.log(stringifyMessage(messageComponents));
+  logMessage(DebugLevel.OUTPUT, messageComponents);
 }
 
-export const logTrace = logMessage.bind(null, DebugLevel.TRACE);
+export function logTrace(...messageComponents: JSONable[]): void {
+  logMessage(DebugLevel.TRACE, messageComponents);
+}
 
-export const logInfo = logMessage.bind(null, DebugLevel.INFO);
+export function logInfo(...messageComponents: JSONable[]): void {
+  logMessage(DebugLevel.INFO, messageComponents);
+}
 
-export function logWarning(message: string, log = false): void {
-  if (log) console.log(message);
-  logMessage(DebugLevel.WARNING, message);
+export function logWarning(
+  { log = false }: { log?: boolean } = {},
+  ...messageComponents: JSONable[]
+): void {
+  if (log) console.log(stringifyMessage(messageComponents));
+  logMessage(DebugLevel.WARNING, messageComponents);
 }
 
 export function logError(message: string): never {
-  logMessage(DebugLevel.FATAL, message);
+  logMessage(DebugLevel.FATAL, [message]);
   console.log(`Fatal error: check the log file for more information.`);
   ExitProcess(1);
 }
 
-type JSONable =
-  | string
-  | number
-  | Date
-  | unknown[]
-  | readonly unknown[]
-  | { [key: string]: JSONable };
-
-// helpers to log data types
-export function stringifyJsonData(data: JSONable): string {
-  return JSON.stringify(data, (_key, value) =>
-    value instanceof Date ? value.toISOString() : value
-  );
+export function wrapWithQuotes(str: string): string {
+  return `"${str}"`;
 }

@@ -1,5 +1,7 @@
 import { on as processAddListener, exit as ProcessExitRaw } from "node:process";
 
+type TeardownCallback = () => void;
+
 const exitCodes = [
   // graceful exit
   "beforeExit",
@@ -11,8 +13,6 @@ const exitCodes = [
   // uncaught exception and graceful exit errors
   "uncaughtException",
 ] as const;
-
-type TeardownCallback = () => void;
 
 const teardownCallbacks: TeardownCallback[] = [];
 

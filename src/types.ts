@@ -1,5 +1,3 @@
-export type PromiseableVoid = void | Promise<void>;
-
 export const enum Arguments {
   CONTEXT_VALUE,
   VERSION,
@@ -18,10 +16,10 @@ export const enum ErrorCodes {
 // The values of the enum must be the same as the string values of the enum.
 export enum DebugLevel {
   FATAL = "FATAL",
-  ERROR = "ERROR",
   WARNING = "WARNING",
   OUTPUT = "OUTPUT",
   INFO = "INFO",
-  DEBUG = "DEBUG",
   TRACE = "TRACE",
 }
+
+export type Promisable<T> = T | Promise<T>;
