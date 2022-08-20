@@ -1,6 +1,5 @@
-import { logError, logInfo } from "./Debug";
-import { ExitProcess } from "./helpers";
 import { ErrorCodes } from "types";
+import { exitProcess, logError, logInfo } from "utils";
 
 const isCustomError = Symbol("isCustomError");
 
@@ -22,7 +21,7 @@ const ErrorDescriptions: Record<ErrorCodes, string> = {
   [ErrorCodes.GENERAL]: "An error occurred.",
 };
 
-interface CustomError<T extends ErrorCodes> {
+interface ICustomError<T extends ErrorCodes> {
   [isCustomError]: true;
   code: T;
   name: typeof ErrorNames[T];
@@ -33,7 +32,7 @@ interface CustomError<T extends ErrorCodes> {
 
 class BaseCustomError<T extends ErrorCodes>
   extends Error
-  implements CustomError<T>
+  implements ICustomError<T>
 {
   readonly [isCustomError]: true = true;
   readonly name: typeof ErrorNames[T];
@@ -60,8 +59,14 @@ class BaseCustomError<T extends ErrorCodes>
   }
 }
 
-// purposely not adding an explicit return type here, the compiler infers a better type
-function makeCustomErrorWithCode<T extends ErrorCodes>(code: T) {
+// TODO: is there a way to make the original constructor in BaseCustomError not visible to users of this type?
+type CustomError<T extends ErrorCodes> = typeof BaseCustomError<T> & {
+  new (message: string): BaseCustomError<T>;
+};
+
+function makeCustomErrorWithCode<T extends ErrorCodes>(
+  code: T
+): CustomError<T> {
   return class extends BaseCustomError<T> {
     constructor(message: string) {
       super(message, code);
@@ -73,7 +78,7 @@ function makeCustomErrorWithCode<T extends ErrorCodes>(code: T) {
 
 export class GracefulExitError
   extends Error
-  implements CustomError<ErrorCodes.GRACEFUL_EXIT>
+  implements ICustomError<ErrorCodes.GRACEFUL_EXIT>
 {
   readonly [isCustomError] = true;
   readonly code = ErrorCodes.GRACEFUL_EXIT;
@@ -86,7 +91,7 @@ export class GracefulExitError
 
   throw(): never {
     logInfo("Gracefully exiting");
-    ExitProcess(0);
+    exitProcess(0);
   }
 }
 export const ArgumentParseError = makeCustomErrorWithCode(

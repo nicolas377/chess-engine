@@ -1,15 +1,20 @@
 import { argv as processArgv } from "node:process";
 import { version } from "../../package.json";
+import { Arguments, DebugLevel, logLevelNames } from "types";
 import {
+  ArgumentParseError,
+  arrayAtIndex,
+  arrayIncludesValue,
+  entriesOfObject,
+  keysOfObject,
   logInfo,
   logTrace,
   logWarning,
   outputToConsole,
+  stringifyMessage,
+  ValidationError,
   wrapWithQuotes,
-} from "./Debug";
-import { ArgumentParseError, ValidationError } from "./errors";
-import { ArrayAt, ArrayIncludes, ObjectEntries } from "./helpers";
-import { Arguments, DebugLevel } from "types";
+} from "utils";
 
 type ArgumentsWithoutContext = Exclude<Arguments, Arguments.CONTEXT_VALUE>;
 
@@ -25,7 +30,7 @@ const ArgumentDescriptions: Record<ArgumentsWithoutContext, string> = {
   [Arguments.HELP]: "Prints this help message.",
   [Arguments.DEBUG]: "Enables debug mode.",
   [Arguments.LOG_LEVEL]: `Sets the level at which logs are included in the log file. Any of ${Object.values(
-    DebugLevel
+    logLevelNames
   ).join(", ")}.`,
 };
 
@@ -42,7 +47,7 @@ interface ConfigOptions {
   readonly version: boolean;
   readonly help: boolean;
   readonly debug: boolean;
-  readonly logLevel: string;
+  readonly logLevel: DebugLevel;
 }
 
 function throwError(error: { throw(): never }): never {
@@ -57,7 +62,7 @@ function logVersion(): void {
 function logHelp(): void {
   const newLine = "\n";
 
-  const message: string = ObjectEntries(ArgumentTriggers)
+  const message: string = entriesOfObject(ArgumentTriggers)
     .reduce<string>(
       (acc, [arg, triggers]: [ArgumentsWithoutContext, string[]]) => {
         const description: string = ArgumentDescriptions[arg];
@@ -76,7 +81,7 @@ function parseRawFlag(flag: string): ArgumentsWithoutContext | undefined {
   logInfo("Parsing raw flag", wrapWithQuotes(flag), "to argument type");
   // Implementation note: Any object's keys are always converted to strings.
   // Because of that, we have to convert back to the numeric enum value.
-  for (const [argument, triggers] of ObjectEntries<
+  for (const [argument, triggers] of entriesOfObject<
     `${ArgumentsWithoutContext}`,
     string[]
   >(ArgumentTriggers)) {
@@ -100,17 +105,36 @@ function getContextValue(
     rawArgs
   );
 
-  const flagValue: string | undefined = ArrayAt(rawArgs, flagValueIndex);
+  const flagValue: string | undefined = arrayAtIndex(rawArgs, flagValueIndex);
   let contextValue: string | undefined;
 
-  if (flagValue?.includes("=")) {
+  if (flagValue === undefined) {
+    throwError(
+      new ArgumentParseError(
+        stringifyMessage([
+          "Flag value index",
+          flagValueIndex,
+          "is out of bounds for arguments",
+          rawArgs,
+        ])
+      )
+    );
+  }
+
+  if (flagValue.includes("=")) {
+    logTrace(
+      "Flag value contains context value inside of the flag (--flag=value)"
+    );
     // strip wrapping quotes when present
-    if (flagValue?.startsWith('"') && flagValue.endsWith('"'))
-      contextValue = flagValue?.slice(1, -1);
-    else contextValue = ArrayAt(flagValue.split("="), 1);
+    if (flagValue.startsWith('"') && flagValue.endsWith('"'))
+      contextValue = flagValue.slice(1, -1);
+    else contextValue = arrayAtIndex(flagValue.split("="), 1);
   } else {
-    contextValue = ArrayAt(rawArgs, flagValueIndex + 1);
-    if (contextValue !== undefined) addSkippedIndex(flagValueIndex + 1);
+    logTrace(
+      "Flag value doesn't contain context value (--flag value), checking next argument"
+    );
+    contextValue = arrayAtIndex(rawArgs, flagValueIndex + 1);
+    if (contextValue) addSkippedIndex(flagValueIndex + 1);
   }
 
   if (contextValue === undefined)
@@ -156,13 +180,13 @@ function parseArgTokens(rawArgs: readonly string[]): TopLevelArgToken[] {
 
   const allArgTokens: TopLevelArgToken[] = [];
 
-  for (const [index, _value] of rawArgs.entries()) {
+  for (const [index, rawArgDoNotUseOutsideOfFlag] of rawArgs.entries()) {
     if (indexShouldBeSkipped(index)) continue;
 
     // support for --flag=value
-    const flag: string = _value.includes("=")
-      ? ArrayAt(_value.split("="), 0) ?? ""
-      : _value;
+    const flag: string = rawArgDoNotUseOutsideOfFlag.includes("=")
+      ? arrayAtIndex(rawArgDoNotUseOutsideOfFlag.split("="), 0) ?? ""
+      : rawArgDoNotUseOutsideOfFlag;
     const arg: Arguments | "UNKNOWN" = parseRawFlag(flag) ?? "UNKNOWN";
 
     logTrace(
@@ -220,36 +244,60 @@ function validateArgTokens(argTokens: TopLevelArgToken[]): void {
   const argTokenTypes = new Set<Arguments>();
 
   for (const argToken of argTokens) {
+    logTrace("Validating arg token", argToken);
+
+    logTrace(
+      "Checking if arg token type",
+      argToken.type,
+      "is unique in all tokens"
+    );
     if (argTokenTypes.has(argToken.type)) {
+      logTrace("Arg token type is not unique, throwing error");
       throwError(new ValidationError("Duplicate argument found"));
     }
 
+    logTrace("Arg token type is unique, adding to set of arg token types");
     argTokenTypes.add(argToken.type);
 
+    logTrace("Validating arg token specific to its type");
     switch (argToken.type) {
       case Arguments.LOG_LEVEL: {
         const rawContextValue: string | undefined = argToken.contextValue?.data;
 
-        if (rawContextValue === undefined)
+        logTrace(
+          "Argument is log level, checking context value",
+          rawContextValue
+        );
+        logTrace("Checking that context value is defined");
+        if (rawContextValue === undefined) {
+          logTrace("Context value is undefined, throwing error");
           throwError(
             new ValidationError(
               "Context value for log level flag not specified."
             )
           );
+        }
 
+        logTrace(
+          "Context value is defined, checking that it is a valid log level"
+        );
         if (
-          !ArrayIncludes(
-            Object.values(DebugLevel),
+          !arrayIncludesValue(
+            Object.values(logLevelNames),
             rawContextValue.toUpperCase()
           )
-        )
+        ) {
+          logTrace("Context value is not a valid log level, throwing error");
           throwError(
             new ValidationError(
               `Provided log level ${rawContextValue} is not a defined log level.`
             )
           );
+        }
       }
     }
+
+    logTrace("Arg token validated");
   }
 }
 
@@ -265,25 +313,44 @@ class MainCliArguments implements ConfigOptions {
     const argTokens: TopLevelArgToken[] = parseArgTokens(processArgv.slice(2));
     validateArgTokens(argTokens);
 
+    logTrace("Processing all arg tokens");
     // setting options
     for (const argToken of argTokens) {
+      logTrace("Processing arg token", argToken);
       switch (argToken.type) {
         case Arguments.VERSION:
+          logTrace("Setting version option");
           this.version = true;
           break;
         case Arguments.HELP:
+          logTrace("Setting help option");
           this.help = true;
           break;
         case Arguments.DEBUG:
+          logTrace("Setting debug option");
           this.debug = true;
           break;
         case Arguments.LOG_LEVEL:
+          logTrace("Setting log level option to", argToken.contextValue?.data);
           this.logLevel =
-            // we already validated the argTokens, so this should be safe
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            argToken.contextValue!.data!.toUpperCase() as DebugLevel;
+            keysOfObject(logLevelNames).find(
+              (key) =>
+                logLevelNames[key] ===
+                argToken.contextValue?.data?.toUpperCase()
+            ) ??
+            throwError(
+              new ArgumentParseError(
+                stringifyMessage([
+                  "An invalid log level slipped past validation, raw level was:",
+                  argToken.contextValue?.data,
+                ])
+              )
+            );
       }
     }
+
+    logTrace("Processing all arg tokens completed");
+    logInfo("cliArgs constructed");
   }
 }
 

@@ -1,54 +1,54 @@
-import { exit as RawProcessExit } from "node:process";
-import { runTeardownCallbacks } from "./teardown";
+import { exit as rawProcessExit } from "node:process";
+import { runTeardownCallbacks } from "utils";
 
-export function StringSplitOverWhiteSpace(str: string): string[] {
+export function splitStringOverWhitespace(str: string): string[] {
   return str.trim().split(/\s+/g);
 }
 
-export function ObjectKeys<T extends PropertyKey>(
+export function keysOfObject<T extends PropertyKey>(
   obj: Record<T, unknown>
 ): T[] {
   return Object.keys(obj) as T[];
 }
 
-export function ObjectEntries<T extends PropertyKey, U>(
+export function entriesOfObject<T extends PropertyKey, U>(
   obj: Record<T, U>
 ): [T, U][] {
   return Object.entries(obj) as [T, U][];
 }
 
-export function ObjectHasOwn<RecordKeys extends PropertyKey>(
+export function objectHasProperty<RecordKeys extends PropertyKey>(
   record: Readonly<Record<RecordKeys, unknown>>,
   key: PropertyKey
 ): key is RecordKeys {
   return Object.prototype.hasOwnProperty.call(record, key);
 }
 
-export function ArrayAt<T>(
+// implementation of Array#at(), based on the polyfill in the proposal.
+export function arrayAtIndex<T>(
   arr: readonly T[],
   targetIndex: number
 ): T | undefined {
   const { length: arrLength } = arr;
-  const { trunc: ToInteger } = Math;
 
-  targetIndex = ToInteger(targetIndex);
-  // Allow negative indexing from the end
+  targetIndex = Math.floor(targetIndex);
+  // Allow negative indexing from the end.
   if (targetIndex < 0) targetIndex += arrLength;
-  // OOB access is guaranteed to return undefined
+  // Return undefined on OOB access.
   if (targetIndex < 0 || targetIndex >= arrLength) return undefined;
-  // Otherwise, this is just normal property access
+  // Otherwise, this is just normal property access.
   return arr[targetIndex];
 }
 
 // just a type narrowing wrapper over Array#includes
-export function ArrayIncludes<T>(
+export function arrayIncludesValue<T>(
   arr: readonly T[],
   value: unknown
 ): value is T {
   return arr.includes(value as T);
 }
 
-export function ExitProcess(code?: number): never {
+export function exitProcess(code?: number): never {
   runTeardownCallbacks();
-  RawProcessExit(code);
+  rawProcessExit(code);
 }

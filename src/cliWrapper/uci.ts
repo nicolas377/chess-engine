@@ -1,48 +1,40 @@
-import { UnknownUciCommandArgs } from "./stdinReader";
+import { UciCommandType, UciInputCommand } from "types";
+import { logInfo, splitStringOverWhitespace } from "utils";
 
-export const enum UciCommandType {
-  UNKNOWN,
-  FIRST,
-  SECOND,
-}
-
-export interface UciCommandTypeAssociatedData {
-  [UciCommandType.UNKNOWN]: null;
-  [UciCommandType.FIRST]: { thing: string };
-  [UciCommandType.SECOND]: { other: number };
-}
-
-export type UnknownUciCommandTypeAssociatedData =
-  UciCommandTypeAssociatedData[UciCommandType];
-
-const unknownCommandDataHolder: UciCommandTypeAssociatedData[UciCommandType.UNKNOWN] =
-  null;
-
-function getUciCommandType(rawType: string): UciCommandType {
-  switch (rawType) {
+function parseUciCommandName(name: string): UciCommandType {
+  switch (name) {
+    case "uci":
+      return UciCommandType.UCI;
+    case "debug":
+      return UciCommandType.DEBUG;
+    case "isready":
+      return UciCommandType.IS_READY;
+    case "setoption":
+      return UciCommandType.SET_OPTION;
+    case "register":
+      return UciCommandType.REGISTER;
+    case "ucinewgame":
+      return UciCommandType.UCI_NEW_GAME;
+    case "position":
+      return UciCommandType.SET_POSITION;
+    case "go":
+      return UciCommandType.GO;
+    case "stop":
+      return UciCommandType.STOP;
+    case "ponderhit":
+      return UciCommandType.PONDER_HIT;
+    case "quit":
+      return UciCommandType.EXIT;
     default:
       return UciCommandType.UNKNOWN;
   }
 }
 
-function getUciCommandArgs(
-  commandType: UciCommandType
-): UnknownUciCommandTypeAssociatedData {
-  switch (commandType) {
-    case UciCommandType.UNKNOWN:
-      return unknownCommandDataHolder;
-    default:
-      return unknownCommandDataHolder;
-  }
-}
+export function parseUciInputString(rawLine: string): UciInputCommand {
+  logInfo(`Parsing UCI command: ${rawLine}`);
 
-export function processUciArgs(args: readonly string[]): UnknownUciCommandArgs {
-  // process the args according to the uci protocol
-  // http://wbec-ridderkerk.nl/html/UCIProtocol.html
+  const lineParts: (string | undefined)[] = splitStringOverWhitespace(rawLine);
+  parseUciCommandName(lineParts[0] ?? "");
 
-  const commandType: UciCommandType = getUciCommandType(args[0]);
-  const commandData: UnknownUciCommandTypeAssociatedData =
-    getUciCommandArgs(commandType);
-
-  return [commandType, commandData] as UnknownUciCommandArgs;
+  return { type: UciCommandType.IS_READY };
 }

@@ -1,4 +1,5 @@
 import { on as processAddListener, exit as ProcessExitRaw } from "node:process";
+import { logTrace } from "./Debug";
 
 type TeardownCallback = () => void;
 
@@ -24,9 +25,16 @@ export function addTeardownCallback(cb: TeardownCallback): void {
   teardownCallbacks.push(cb);
 }
 
-export function runTeardownCallbacks(calledByProcess = false): void {
+export function runTeardownCallbacks(): void;
+export function runTeardownCallbacks(calledByProcess: true): never;
+export function runTeardownCallbacks(calledByProcess?: boolean): void {
+  logTrace("Running teardown functions");
+
   for (const cb of teardownCallbacks) {
     cb();
   }
-  if (calledByProcess) ProcessExitRaw();
+  if (calledByProcess) {
+    logTrace("Exiting process");
+    ProcessExitRaw();
+  }
 }

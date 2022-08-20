@@ -1,13 +1,11 @@
-import { lineReader } from "./cliWrapper/stdinReader";
+import { startEngine } from "cliWrapper/wrapper";
 import {
   cliArgs,
   GracefulExitError,
   logHelp,
   logInfo,
   logVersion,
-  setMinLogLevel,
-  setupTeardown as setupDebugTeardown,
-  wrapWithQuotes,
+  setupDebugTeardown,
 } from "utils";
 
 function setupTeardown(): void {
@@ -19,11 +17,9 @@ async function main(): Promise<void> {
   setupTeardown();
   // Argument initialization and caching has to be the first thing that happens.
   // Teardown setup is the only exception because it could be called if cliArgs throws.
-  // Otherwise, we cannot guarantee that an infinite loop will not occur.
+  // Otherwise, it's entirely possible that an infinite loop will occur and the process will hang.
   const args = cliArgs();
 
-  logInfo("Setting log level to", wrapWithQuotes(args.logLevel));
-  setMinLogLevel(args.logLevel);
   if (args.help) {
     logInfo("Help option specified, logging help and exiting");
     logHelp();
@@ -35,7 +31,7 @@ async function main(): Promise<void> {
     new GracefulExitError().throw();
   }
 
-  lineReader(() => {});
+  startEngine();
 }
 
 main();

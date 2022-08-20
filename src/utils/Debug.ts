@@ -1,14 +1,20 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as ResolvePath } from "node:path";
-import { ExitProcess } from "./helpers";
-import { addTeardownCallback } from "./teardown";
-import { DebugLevel } from "types";
+import { DebugLevel, logLevelNames } from "types";
+import {
+  addTeardownCallback,
+  cliArgs,
+  cliArgsHadError,
+  exitProcess,
+} from "utils";
 
-// Warning! Do not rely on cliArgs anywhere in this file where it could possibly not have been created yet.
-// It will cause circular calls and crash!
+// Warning! Do not rely on cliArgs anywhere in this file.
+// It can, and probably will cause an infinite loop, and the process will hang.
 
 type JSONable =
+  | null
+  | undefined
   | string
   | number
   | Date
@@ -23,11 +29,6 @@ interface Log {
 }
 
 const logs: Log[] = [];
-let minLogLevel: DebugLevel = DebugLevel.TRACE;
-
-export function setMinLogLevel(level: DebugLevel): void {
-  minLogLevel = level;
-}
 
 function compareLogLevel(
   LHS: DebugLevel,
@@ -65,7 +66,7 @@ function compareLogLevel(
   }
 }
 
-function stringifyMessage(messageComponents: JSONable[]): string {
+export function stringifyMessage(messageComponents: JSONable[]): string {
   return messageComponents
     .reduce<string[]>((acc, component) => {
       const stringifiedComponent: string =
@@ -92,8 +93,15 @@ function logMessage(level: DebugLevel, messageComponents: JSONable[]): void {
   });
 }
 
-export function setupTeardown(): void {
+export function setupDebugTeardown(): void {
   addTeardownCallback(() => {
+    // The only reason cliArgs is used here is to get the log level.
+    // The only way that the teardown callback is called before cliArgs is fully initialized
+    // is if cliArgs initialization throws, in which case, cliArgsHadError will be set to true,
+    // and we will fall back to trace logging.
+    const logLevel: DebugLevel = cliArgsHadError
+      ? DebugLevel.TRACE
+      : cliArgs().logLevel;
     const logFile = ResolvePath(
       tmpdir(),
       `engine-${(Date.now() + Math.random() * 0x1000000000).toString(36)}.log`
@@ -103,8 +111,8 @@ export function setupTeardown(): void {
     writeFileSync(
       logFile,
       logs.reduce<string>((acc, { message, date, level }) => {
-        if (compareLogLevel(level, minLogLevel, ">=")) {
-          return acc + `[${date}] (${level}): ${message}\n`;
+        if (compareLogLevel(level, logLevel, ">=")) {
+          return acc + `[${date}] (${logLevelNames[level]}): ${message}\n`;
         } else return acc;
       }, "")
     );
@@ -135,7 +143,7 @@ export function logWarning(
 export function logError(message: string): never {
   logMessage(DebugLevel.FATAL, [message]);
   console.log(`Fatal error: check the log file for more information.`);
-  ExitProcess(1);
+  exitProcess(1);
 }
 
 export function wrapWithQuotes(str: string): string {
