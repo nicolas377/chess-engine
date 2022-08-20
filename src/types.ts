@@ -4,28 +4,15 @@ export type Square = `${File}${Rank}`;
 export type AlgebraicMove = `${Square}${Square}`;
 
 export const enum PieceType {
-  KING = 1,
-  PAWN = 2,
-  KNIGHT = 3,
-  BISHOP = 4,
-  ROOK = 5,
-  QUEEN = 6,
+  KING = 1 << 1,
+  PAWN = 1 << 2,
+  KNIGHT = 1 << 3,
+  BISHOP = 1 << 4,
+  ROOK = 1 << 5,
+  QUEEN = 1 << 6,
 
-  WHITE = 8,
-  BLACK = 16,
-
-  WHITE_PAWN = PAWN | WHITE,
-  WHITE_KNIGHT = KNIGHT | WHITE,
-  WHITE_BISHOP = BISHOP | WHITE,
-  WHITE_ROOK = ROOK | WHITE,
-  WHITE_QUEEN = QUEEN | WHITE,
-  WHITE_KING = KING | WHITE,
-  BLACK_PAWN = PAWN | BLACK,
-  BLACK_KNIGHT = KNIGHT | BLACK,
-  BLACK_BISHOP = BISHOP | BLACK,
-  BLACK_ROOK = ROOK | BLACK,
-  BLACK_QUEEN = QUEEN | BLACK,
-  BLACK_KING = KING | BLACK,
+  WHITE = 1 << 7,
+  BLACK = 1 << 8,
 }
 
 export const enum ProcessFlags {
@@ -91,6 +78,12 @@ export const enum Arguments {
   HELP,
   DEBUG,
   LOG_LEVEL,
+}
+
+export const enum Options {
+  VERSION,
+  HELP,
+  DEBUG,
 }
 
 export const enum ErrorCodes {

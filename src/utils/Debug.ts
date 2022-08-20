@@ -2,12 +2,7 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as ResolvePath } from "node:path";
 import { DebugLevel, logLevelNames } from "types";
-import {
-  addTeardownCallback,
-  cliArgs,
-  cliArgsHadError,
-  exitProcess,
-} from "utils";
+import { addTeardownCallback, exitProcess, programOptions } from "utils";
 
 // Warning! Do not rely on cliArgs anywhere in this file.
 // It can, and probably will cause an infinite loop, and the process will hang.
@@ -29,42 +24,6 @@ interface Log {
 }
 
 const logs: Log[] = [];
-
-function compareLogLevel(
-  LHS: DebugLevel,
-  RHS: DebugLevel,
-  operator: ">" | "<" | ">=" | "<=" | "="
-): boolean {
-  // We can't object destructure the array for the indexOf() method,
-  // as it messes with this bindings needed to make indexOf() work.
-
-  // The array element order needs to be from least to most important
-  // in order for indexing to work as intended.
-  const debugLevels = [
-    DebugLevel.TRACE,
-    DebugLevel.INFO,
-    DebugLevel.OUTPUT,
-    DebugLevel.WARNING,
-    DebugLevel.FATAL,
-  ] as const;
-
-  // We also ensure that debugLevels contains all the levels, and nothing else in the indexOf() calls.
-  const LHSIndex = debugLevels.indexOf(LHS);
-  const RHSIndex = debugLevels.indexOf(RHS);
-
-  switch (operator) {
-    case ">":
-      return LHSIndex > RHSIndex;
-    case "<":
-      return LHSIndex < RHSIndex;
-    case ">=":
-      return LHSIndex >= RHSIndex;
-    case "<=":
-      return LHSIndex <= RHSIndex;
-    case "=":
-      return LHSIndex === RHSIndex;
-  }
-}
 
 export function stringifyMessage(messageComponents: JSONable[]): string {
   return messageComponents
@@ -95,13 +54,8 @@ function logMessage(level: DebugLevel, messageComponents: JSONable[]): void {
 
 export function setupDebugTeardown(): void {
   addTeardownCallback(() => {
-    // The only reason cliArgs is used here is to get the log level.
-    // The only way that the teardown callback is called before cliArgs is fully initialized
-    // is if cliArgs initialization throws, in which case, cliArgsHadError will be set to true,
-    // and we will fall back to trace logging.
-    const logLevel: DebugLevel = cliArgsHadError
-      ? DebugLevel.TRACE
-      : cliArgs().logLevel;
+    if (!programOptions.debugMode) return;
+
     const logFile = ResolvePath(
       tmpdir(),
       `engine-${(Date.now() + Math.random() * 0x1000000000).toString(36)}.log`
@@ -110,11 +64,11 @@ export function setupDebugTeardown(): void {
     console.log(`Log file: ${logFile}`);
     writeFileSync(
       logFile,
-      logs.reduce<string>((acc, { message, date, level }) => {
-        if (compareLogLevel(level, logLevel, ">=")) {
-          return acc + `[${date}] (${logLevelNames[level]}): ${message}\n`;
-        } else return acc;
-      }, "")
+      logs.reduce<string>(
+        (acc, { message, date, level }) =>
+          acc + `[${date}] (${logLevelNames[level]}): ${message}\n`,
+        ""
+      )
     );
   });
 }
