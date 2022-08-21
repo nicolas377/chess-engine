@@ -18,7 +18,7 @@ const exitCodes = [
 const teardownCallbacks: TeardownCallback[] = [];
 
 for (const exitCode of exitCodes) {
-  processAddListener(exitCode, runTeardownCallbacks.bind(null, true));
+  processAddListener(exitCode, runTeardownCallbacks.bind(undefined, true));
 }
 
 export function addTeardownCallback(cb: TeardownCallback): void {

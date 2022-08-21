@@ -34,37 +34,31 @@ export type UciInputCommand =
   | { type: UciCommandType.UNKNOWN }
   | { type: UciCommandType.UCI }
   | { type: UciCommandType.IS_READY }
-  // TODO: implement options
   | { type: UciCommandType.SET_OPTION }
   | { type: UciCommandType.UCI_NEW_GAME }
   | { type: UciCommandType.STOP }
   | { type: UciCommandType.PONDER_HIT }
   | { type: UciCommandType.EXIT }
+  | { type: UciCommandType.REGISTER }
   | { type: UciCommandType.DEBUG; on: boolean }
   | {
-      type: UciCommandType.REGISTER;
-      later?: boolean;
-      name?: string;
-      code?: string;
-    }
-  | {
       type: UciCommandType.SET_POSITION;
-      fen?: string;
-      startPosition?: string;
-      moves?: string;
+      startPositionFen?: string;
+      moves?: AlgebraicMove[];
     }
   | {
       type: UciCommandType.GO;
+      ponder: boolean;
+      infiniteSearch: boolean;
       searchWithMoves?: AlgebraicMove[];
-      ponder?: boolean;
       whiteTimeLeft?: number;
       whiteTimeIncrement?: number;
       blackTimeLeft?: number;
       blackTimeIncrement?: number;
       movesUntilNextTimeControl?: number;
-      infiniteSearch?: true;
-      depth?: number;
+      depthInPlies?: number;
       maxNodes?: number;
+      lookForMateInMoves?: number;
       forcedMoveTime?: number;
     };
 
@@ -85,6 +79,7 @@ export const enum Options {
 export const enum ErrorCodes {
   VALIDATION_ERROR = "0001",
   ARGUMENT_PARSE_ERROR = "0002",
+  UCI_PARSE_ERROR = "0003",
   GRACEFUL_EXIT = "9998",
   GENERAL = "9999",
 }

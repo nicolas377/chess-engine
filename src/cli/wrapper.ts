@@ -1,7 +1,14 @@
 import { stdin as processStdin, stdout as processStdout } from "node:process";
 import { createInterface } from "node:readline";
 import { parseUciInputString } from "cli/uci";
-import { logInfo } from "utils";
+import {
+  addEngineState,
+  engineIsInState,
+  EngineState,
+  removeEngineState,
+} from "state";
+import { UciCommandType } from "types";
+import { logInfo, logWarning, wrapWithQuotes } from "utils";
 
 // TODO: accept input in stdin even while stdout is being written to
 function rawLineReader(cb: (rawLine: string) => void): void {
@@ -20,7 +27,29 @@ function rawLineReader(cb: (rawLine: string) => void): void {
 
 export function startEngine(): void {
   logInfo("Starting the engine");
+  removeEngineState(EngineState.STARTUP);
+  addEngineState(EngineState.READY);
   rawLineReader((rawLine) => {
-    const uciCommand = parseUciInputString(rawLine);
+    logInfo("Received raw line:", wrapWithQuotes(rawLine));
+    addEngineState(EngineState.RECEIVED_UCI);
+
+    const uciCommandOrError = parseUciInputString(rawLine);
+
+    if (uciCommandOrError instanceof Error) {
+      logInfo(
+        "An error occurred while parsing the UCI command. It will be logged, and the command will be ignored."
+      );
+      logWarning(undefined, uciCommandOrError.toString());
+      return;
+    }
+    if (uciCommandOrError.type === UciCommandType.UNKNOWN) {
+      logInfo("Unknown UCI command:", wrapWithQuotes(rawLine));
+      return;
+    }
+
+    if (engineIsInState(EngineState.RECEIVED_UCI))
+      console.log(uciCommandOrError);
+
+    removeEngineState(EngineState.RECEIVED_UCI);
   });
 }

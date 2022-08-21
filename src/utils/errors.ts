@@ -8,6 +8,7 @@ const isCustomError = Symbol("isCustomError");
 const ErrorNames: Record<ErrorCodes, string> = {
   [ErrorCodes.VALIDATION_ERROR]: "ValidationError",
   [ErrorCodes.ARGUMENT_PARSE_ERROR]: "ArgumentParseError",
+  [ErrorCodes.UCI_PARSE_ERROR]: "UciParseError",
   [ErrorCodes.GRACEFUL_EXIT]: "GracefulExit",
   [ErrorCodes.GENERAL]: "GeneralError",
 };
@@ -18,6 +19,7 @@ const ErrorDescriptions: Record<ErrorCodes, string> = {
     "Something went wrong when validating input through CLI flags.",
   [ErrorCodes.ARGUMENT_PARSE_ERROR]:
     "Something went wrong when parsing CLI flags.",
+  [ErrorCodes.UCI_PARSE_ERROR]: "Something went wrong when parsing UCI input.",
   [ErrorCodes.GRACEFUL_EXIT]: "The program was asked to exit gracefully.",
   [ErrorCodes.GENERAL]: "An error occurred.",
 };
@@ -56,8 +58,11 @@ class BaseCustomError<T extends ErrorCodes>
 
   throw(): never {
     addEngineState(EngineState.ERROR);
+    addEngineState(EngineState.EXITING);
+
     console.log(this.toString());
     logError(this.toString());
+    exitProcess(1);
   }
 }
 
@@ -93,11 +98,15 @@ export class GracefulExitError
 
   throw(): never {
     logInfo("Gracefully exiting");
+    addEngineState(EngineState.EXITING);
     exitProcess(0);
   }
 }
 export const ArgumentParseError = makeCustomErrorWithCode(
   ErrorCodes.ARGUMENT_PARSE_ERROR
+);
+export const UciParseError = makeCustomErrorWithCode(
+  ErrorCodes.UCI_PARSE_ERROR
 );
 export const GeneralError = makeCustomErrorWithCode(ErrorCodes.GENERAL);
 export const ValidationError = makeCustomErrorWithCode(

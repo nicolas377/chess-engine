@@ -2,13 +2,9 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as ResolvePath } from "node:path";
 import { DebugLevel, logLevelNames } from "types";
-import { addTeardownCallback, exitProcess, programOptions } from "utils";
-
-// Warning! Do not rely on cliArgs anywhere in this file.
-// It can, and probably will cause an infinite loop, and the process will hang.
+import { addTeardownCallback, programOptions } from "utils";
 
 type JSONable =
-  | null
   | undefined
   | string
   | number
@@ -94,10 +90,8 @@ export function logWarning(
   logMessage(DebugLevel.WARNING, messageComponents);
 }
 
-export function logError(message: string): never {
+export function logError(message: string): void {
   logMessage(DebugLevel.FATAL, [message]);
-  console.log(`Fatal error: check the log file for more information.`);
-  exitProcess(1);
 }
 
 export function wrapWithQuotes(str: string): string {

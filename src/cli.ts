@@ -1,4 +1,5 @@
 import { startEngine } from "cli/wrapper";
+import { addEngineState, clearEngineState, EngineState } from "state";
 import {
   GracefulExitError,
   logHelp,
@@ -14,6 +15,8 @@ function setupTeardown(): void {
 }
 
 function main(): void {
+  clearEngineState();
+  addEngineState(EngineState.STARTUP);
   setupTeardown();
   // Argument initialization should be the first thing that happens.
   // Teardown is setup to make sure that teardown callbacks are called even if an error is thrown in argument initialization.
