@@ -4,19 +4,15 @@ export type Square = `${File}${Rank}`;
 export type AlgebraicMove = `${Square}${Square}`;
 
 export const enum PieceType {
-  KING = 1 << 1,
-  PAWN = 1 << 2,
-  KNIGHT = 1 << 3,
-  BISHOP = 1 << 4,
-  ROOK = 1 << 5,
-  QUEEN = 1 << 6,
+  KING = 1 << 0,
+  PAWN = 1 << 1,
+  KNIGHT = 1 << 2,
+  BISHOP = 1 << 3,
+  ROOK = 1 << 4,
+  QUEEN = 1 << 5,
 
-  WHITE = 1 << 7,
-  BLACK = 1 << 8,
-}
-
-export const enum ProcessFlags {
-  STARTUP = 1 << 0,
+  WHITE = 1 << 6,
+  BLACK = 1 << 7,
 }
 
 export const enum UciCommandType {

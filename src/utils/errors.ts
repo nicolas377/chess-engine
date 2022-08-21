@@ -1,3 +1,4 @@
+import { addEngineState, EngineState } from "state";
 import { ErrorCodes } from "types";
 import { exitProcess, logError, logInfo } from "utils";
 
@@ -34,7 +35,7 @@ class BaseCustomError<T extends ErrorCodes>
   extends Error
   implements ICustomError<T>
 {
-  readonly [isCustomError]: true = true;
+  readonly [isCustomError] = true;
   readonly name: typeof ErrorNames[T];
   readonly code: T;
   readonly description: typeof ErrorDescriptions[T];
@@ -54,6 +55,7 @@ class BaseCustomError<T extends ErrorCodes>
   }
 
   throw(): never {
+    addEngineState(EngineState.ERROR);
     console.log(this.toString());
     logError(this.toString());
   }

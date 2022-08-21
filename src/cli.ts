@@ -1,4 +1,4 @@
-import { startEngine } from "cliWrapper/wrapper";
+import { startEngine } from "cli/wrapper";
 import {
   GracefulExitError,
   logHelp,
@@ -13,7 +13,7 @@ function setupTeardown(): void {
   setupDebugTeardown();
 }
 
-async function main(): Promise<void> {
+function main(): void {
   setupTeardown();
   // Argument initialization should be the first thing that happens.
   // Teardown is setup to make sure that teardown callbacks are called even if an error is thrown in argument initialization.

@@ -7,7 +7,7 @@
       "request": "launch",
       "runtimeExecutable": "node",
       "runtimeArgs": ["--nolazy", "-r", "ts-node/register/transpile-only"],
-      "args": ["src/index.ts", "--debug"],
+      "args": ["src/cli.ts", "--debug"],
       "cwd": "${workspaceRoot}",
       "skipFiles": ["<node_internals>/**", "node_modules/**"],
       "console": "integratedTerminal"

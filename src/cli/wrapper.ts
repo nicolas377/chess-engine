@@ -1,12 +1,7 @@
 import { stdin as processStdin, stdout as processStdout } from "node:process";
 import { createInterface } from "node:readline";
-import { parseUciInputString } from "cliWrapper/uci";
-import { ProcessFlags } from "types";
+import { parseUciInputString } from "cli/uci";
 import { logInfo } from "utils";
-
-// TODO: remove the eslint comment
-// eslint-disable-next-line prefer-const
-let processFlags: ProcessFlags = ProcessFlags.STARTUP;
 
 // TODO: accept input in stdin even while stdout is being written to
 function rawLineReader(cb: (rawLine: string) => void): void {

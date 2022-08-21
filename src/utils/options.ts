@@ -1,3 +1,4 @@
+import { argv as processArgv } from "node:process";
 import { version } from "../../package.json";
 import { Options } from "types";
 import {
@@ -152,7 +153,7 @@ class OptionsClass implements IOptions {
   }
 
   public initializeFromCliArgs(): void {
-    let argTokens: CliArgToken[] = parseArgTokens(process.argv.slice(2));
+    let argTokens: CliArgToken[] = parseArgTokens(processArgv.slice(2));
     argTokens = validateArgTokens(argTokens);
 
     logTrace("Processing all arg tokens");
