@@ -1,5 +1,6 @@
 import { stdin as processStdin, stdout as processStdout } from "node:process";
 import { createInterface } from "node:readline";
+import { handleUciInput } from "cli/handler";
 import { parseUciInputString } from "cli/uci";
 import {
   addEngineState,
@@ -46,6 +47,8 @@ export function startEngine(): void {
       logInfo("Unknown UCI command:", wrapWithQuotes(rawLine));
       return;
     }
+
+    handleUciInput(uciCommandOrError);
 
     if (engineIsInState(EngineState.RECEIVED_UCI))
       console.log(uciCommandOrError);

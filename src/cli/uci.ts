@@ -155,7 +155,7 @@ export function parseUciInputString(
           lineParts
         );
         const number = parseInt(arrayAtIndex(lineParts, numberIndex) ?? "");
-        if (isNaN(number)) {
+        if (Number.isNaN(number)) {
           logTrace("A number was not able to be parsed, returning undefined");
           return undefined;
         }

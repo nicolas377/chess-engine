@@ -8,6 +8,7 @@ type JSONable =
   | undefined
   | string
   | number
+  | boolean
   | Date
   | unknown[]
   | readonly unknown[]

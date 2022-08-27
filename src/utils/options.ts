@@ -178,7 +178,7 @@ class OptionsClass implements IOptions {
       }
     }
 
-    logTrace("arg token processing completed");
+    logTrace("Arg token processing completed");
   }
 }
 
