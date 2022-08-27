@@ -133,6 +133,7 @@ type IOptions = Record<
 >;
 
 class OptionsClass implements IOptions {
+  private initialized = false;
   private [Options.VERSION] = false;
   private [Options.HELP] = false;
   private [Options.DEBUG] = false;
@@ -153,6 +154,8 @@ class OptionsClass implements IOptions {
   }
 
   public initializeFromCliArgs(): void {
+    if (this.initialized) return;
+
     let argTokens: CliArgToken[] = parseArgTokens(processArgv.slice(2));
     argTokens = validateArgTokens(argTokens);
 
@@ -175,8 +178,7 @@ class OptionsClass implements IOptions {
       }
     }
 
-    logTrace("Processing all arg tokens completed");
-    logInfo("cliArgs constructed");
+    logTrace("arg token processing completed");
   }
 }
 

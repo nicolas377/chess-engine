@@ -10,6 +10,11 @@
     "prepare": "husky install",
     "prettier": "prettier --ignore-path=.gitignore --write ."
   },
+  "types": "./dist/api.d.ts",
+  "exports": {
+    "import": "./dist/api.mjs",
+    "require": "./dist/api.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nicolas377/chess-engine.git"
@@ -33,6 +38,7 @@
     "husky": "~8.0.1",
     "prettier": "~2.7.1",
     "rollup": "~2.78.1",
+    "rollup-plugin-dts": "4.2.2",
     "rollup-plugin-node-externals": "~4.1.1",
     "ts-node": "~10.9.1",
     "tsconfig-paths": "~4.1.0",

@@ -2,12 +2,14 @@ import { AlgebraicMove, UciCommandType, UciInputCommand } from "types";
 import {
   arrayAtIndex,
   logInfo,
+  logTrace,
   splitStringOverWhitespace,
   UciParseError,
   wrapWithQuotes,
 } from "utils";
 
 function parseUciCommandName(name: string): UciCommandType {
+  logInfo("Parsing UCI command name:", wrapWithQuotes(name));
   switch (name) {
     case "uci":
       return UciCommandType.UCI;
@@ -40,13 +42,15 @@ function parseUciCommandName(name: string): UciCommandType {
 export function parseUciInputString(
   rawLine: string
 ): UciInputCommand | InstanceType<typeof UciParseError> {
-  logInfo(`Parsing UCI command: ${rawLine}`);
+  logInfo("Parsing UCI command:", wrapWithQuotes(rawLine));
 
   const lineParts: string[] = splitStringOverWhitespace(rawLine);
   const commandName: UciCommandType = parseUciCommandName(
     arrayAtIndex(lineParts, 0) ?? ""
   );
+  logInfo("Parsed UCI command name:", commandName);
 
+  logTrace("Parsing UCI command arguments");
   switch (commandName) {
     // We don't need to parse any arguments for these commands.
     // No registration is needed for this engine.
@@ -58,19 +62,43 @@ export function parseUciInputString(
     case UciCommandType.STOP:
     case UciCommandType.PONDER_HIT:
     case UciCommandType.EXIT:
+      logTrace("No arguments needed for command");
       return { type: commandName };
     case UciCommandType.DEBUG:
+      logTrace("Parsing debug command arguments");
       return { type: commandName, on: arrayAtIndex(lineParts, 1) === "on" };
-    case UciCommandType.SET_OPTION:
-      // TODO: implement options
-      return { type: commandName };
+    case UciCommandType.SET_OPTION: {
+      logTrace("Parsing set option command arguments");
+      const name = /(?<=name )(.*)(?= value)/.exec(rawLine)?.[0];
+      const value = /(?<=value )(.*)/.exec(rawLine)?.[0];
+
+      logTrace(
+        "Parsed name",
+        wrapWithQuotes(name ?? "undefined"),
+        "and value",
+        wrapWithQuotes(value ?? "undefined")
+      );
+
+      if (!name || !value) {
+        return new UciParseError("Name or value is not specified");
+      }
+
+      return {
+        type: commandName,
+        name,
+        value,
+      };
+    }
     case UciCommandType.SET_POSITION: {
+      logTrace("Parsing set position command arguments");
       let fen: string | undefined;
       let moves: string[] | undefined;
 
       // These regex's use positive lookbehinds, which make them incompatible with node versions less than 10.
       if (lineParts.includes("fen")) {
         fen = /(?<=fen\s+)((?:\S+ ){5})(?:\S+?)/.exec(rawLine)?.[0];
+
+        logTrace("Parsed fen", wrapWithQuotes(fen ?? "undefined"));
         if (!fen)
           return new UciParseError("FEN not found where one was expected");
       }
@@ -81,6 +109,7 @@ export function parseUciInputString(
           ?.trimEnd()
           .split(/\s/g);
 
+        logTrace("Parsed moves", moves);
         if (
           !moves ||
           moves.some(
@@ -99,13 +128,39 @@ export function parseUciInputString(
       };
     }
     case UciCommandType.GO: {
+      logTrace("Parsing go command arguments");
+
       const getNumberAfterFlag = (flag: string): number | undefined => {
+        logInfo("Attempting to parse number after flag", wrapWithQuotes(flag));
+
         const flagIndex = lineParts.indexOf(flag);
-        if (flagIndex === -1) return undefined;
+        if (flagIndex === -1) {
+          logTrace(
+            "Flag",
+            wrapWithQuotes(flag),
+            "not found in passed UCI command, returning undefined"
+          );
+          return undefined;
+        }
         const numberIndex = flagIndex + 1;
-        if (numberIndex >= lineParts.length) return undefined;
+        if (numberIndex >= lineParts.length) {
+          logTrace("Flag", wrapWithQuotes(flag), "has nothing after it");
+          return undefined;
+        }
+
+        logTrace(
+          "Attempting to parse number at index",
+          numberIndex,
+          "in",
+          lineParts
+        );
         const number = parseInt(arrayAtIndex(lineParts, numberIndex) ?? "");
-        if (isNaN(number)) return undefined;
+        if (isNaN(number)) {
+          logTrace("A number was not able to be parsed, returning undefined");
+          return undefined;
+        }
+
+        logInfo(number, "was parsed");
         return number;
       };
       let searchWithMoves: string[] | undefined;
@@ -115,6 +170,7 @@ export function parseUciInputString(
           .exec(rawLine)?.[0]
           ?.trimEnd()
           .split(/\s/g);
+        logTrace("Parsed search moves", searchWithMoves);
         if (
           !searchWithMoves ||
           searchWithMoves.some(
@@ -122,7 +178,7 @@ export function parseUciInputString(
           )
         )
           return new UciParseError(
-            "Moves not found where they was expected, or moves are not algebraic"
+            "Moves not found where they were expected, or moves are not algebraic"
           );
       }
 

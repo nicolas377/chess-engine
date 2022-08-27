@@ -34,13 +34,13 @@ export type UciInputCommand =
   | { type: UciCommandType.UNKNOWN }
   | { type: UciCommandType.UCI }
   | { type: UciCommandType.IS_READY }
-  | { type: UciCommandType.SET_OPTION }
   | { type: UciCommandType.UCI_NEW_GAME }
   | { type: UciCommandType.STOP }
   | { type: UciCommandType.PONDER_HIT }
   | { type: UciCommandType.EXIT }
   | { type: UciCommandType.REGISTER }
   | { type: UciCommandType.DEBUG; on: boolean }
+  | { type: UciCommandType.SET_OPTION; name: string; value: string }
   | {
       type: UciCommandType.SET_POSITION;
       startPositionFen?: string;

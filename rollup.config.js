@@ -1,6 +1,7 @@
 // @ts-check
 import json from "@rollup/plugin-json";
 import typescript from "@rollup/plugin-typescript";
+import dts from "rollup-plugin-dts";
 import external from "rollup-plugin-node-externals";
 
 /** @type {import("rollup").RollupOptions[]} */
@@ -37,6 +38,14 @@ const config = [
       typescript({ tsconfig: "./tsconfig.rollup.json" }),
       json({ preferConst: true }),
     ],
+  },
+  {
+    input: "src/engine/api.ts",
+    output: {
+      file: "dist/api.d.ts",
+      format: "es",
+    },
+    plugins: [dts()],
   },
 ];
 
