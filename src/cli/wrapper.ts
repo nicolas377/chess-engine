@@ -2,14 +2,9 @@ import { stdin as processStdin, stdout as processStdout } from "node:process";
 import { createInterface } from "node:readline";
 import { handleUciInput } from "cli/handler";
 import { parseUciInputString } from "cli/uci";
-import {
-  addEngineState,
-  engineIsInState,
-  EngineState,
-  removeEngineState,
-} from "state";
+import { addEngineState, EngineState, removeEngineState } from "state";
 import { UciCommandType } from "types";
-import { logInfo, logWarning, wrapWithQuotes } from "utils";
+import { logInfo, logWarning, outputToConsole, wrapWithQuotes } from "utils";
 
 // TODO: accept input in stdin even while stdout is being written to
 function rawLineReader(cb: (rawLine: string) => void): void {
@@ -44,14 +39,12 @@ export function startEngine(): void {
       return;
     }
     if (uciCommandOrError.type === UciCommandType.UNKNOWN) {
+      outputToConsole("Unknown command:", rawLine);
       logInfo("Unknown UCI command:", wrapWithQuotes(rawLine));
       return;
     }
 
     handleUciInput(uciCommandOrError);
-
-    if (engineIsInState(EngineState.RECEIVED_UCI))
-      console.log(uciCommandOrError);
 
     removeEngineState(EngineState.RECEIVED_UCI);
   });

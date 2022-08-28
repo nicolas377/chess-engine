@@ -26,8 +26,7 @@ export function engineIsInState(state: EngineState): boolean {
   // Bitwise AND will return the common bits, which is 0000 (0).
   // So, the engine is not in READY.
 
-  // Since all the flags are bitshifted 1, bitwise AND will always return 0 if the engine is not in a certain state.
-  return (currentEngineState & state) !== 0;
+  return (currentEngineState & state) === state;
 }
 
 export function addEngineState(state: EngineState): EngineState {

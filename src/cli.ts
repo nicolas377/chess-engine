@@ -18,8 +18,6 @@ function main(): void {
   clearEngineState();
   addEngineState(EngineState.STARTUP);
   setupTeardown();
-  // Argument initialization should be the first thing that happens.
-  // Teardown is setup to make sure that teardown callbacks are called even if an error is thrown in argument initialization.
   programOptions.initializeFromCliArgs();
 
   if (programOptions.printHelpAndExit) {

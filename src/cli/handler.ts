@@ -1,17 +1,18 @@
+import { engineIsInState, EngineState } from "state";
 import { UciCommandType, UciInputCommand } from "types";
-import { logInfo } from "utils";
+import { logInfo, outputToConsole, programOptions } from "utils";
 
 // pick only input commands that have the specified type T
-type PickTypeFromUciCommands<
-  T extends UciCommandType,
-  U extends UciInputCommand = UciInputCommand
-> = U extends { type: T } ? U : never;
+type PickTypeFromUciCommands<T extends UciCommandType> = Extract<
+  UciInputCommand,
+  { type: T }
+>;
 
 // remove input commands that have the specified type T
-type RemoveTypeFromUciCommands<
-  T extends UciCommandType,
-  U extends UciInputCommand = UciInputCommand
-> = U extends { type: T } ? never : U;
+type RemoveTypeFromUciCommands<T extends UciCommandType> = Exclude<
+  UciInputCommand,
+  { type: T }
+>;
 
 function handleUciCommand(
   uciCommand: PickTypeFromUciCommands<UciCommandType.UCI>
@@ -23,12 +24,52 @@ function handleDebugCommand(
   uciCommand: PickTypeFromUciCommands<UciCommandType.DEBUG>
 ): void {
   logInfo("Received debug command:", uciCommand);
+
+  if (programOptions.debugMode === uciCommand.on) {
+    logInfo(
+      "Debug mode is already",
+      `${uciCommand.on ? "on" : "off"}.`,
+      "No action will be taken"
+    );
+    return;
+  }
+
+  logInfo("Setting debug mode to", uciCommand.on ? "on" : "off");
+  programOptions.debugMode = uciCommand.on;
 }
 
 function handleIsReadyCommand(
   uciCommand: PickTypeFromUciCommands<UciCommandType.IS_READY>
 ): void {
+  const isReadyCheck = (): boolean => {
+    logInfo("Checking if the engine is ready");
+
+    if (engineIsInState(EngineState.READY)) {
+      logInfo("The engine is ready");
+      return true;
+    } else {
+      logInfo("The engine is not ready");
+      return false;
+    }
+  };
+  const sendReadyResponse = (): void => {
+    logInfo("Sending ready response");
+    outputToConsole(`readyok`);
+  };
+
   logInfo("Received is ready command:", uciCommand);
+
+  if (isReadyCheck()) {
+    sendReadyResponse();
+    return;
+  }
+
+  const timer = setInterval((): void => {
+    if (isReadyCheck()) {
+      clearInterval(timer);
+      sendReadyResponse();
+    }
+  }, 10);
 }
 
 function handleSetOptionCommand(

@@ -94,7 +94,6 @@ export function parseUciInputString(
       let fen: string | undefined;
       let moves: string[] | undefined;
 
-      // These regex's use positive lookbehinds, which make them incompatible with node versions less than 10.
       if (lineParts.includes("fen")) {
         fen = /(?<=fen\s+)((?:\S+ ){5})(?:\S+?)/.exec(rawLine)?.[0];
 
@@ -107,7 +106,7 @@ export function parseUciInputString(
           .exec(rawLine)?.[0]
           // TODO: figure out how to get the regex to not match the last whitespace character.
           ?.trimEnd()
-          .split(/\s/g);
+          .split(/\s+/g);
 
         logTrace("Parsed moves", moves);
         if (

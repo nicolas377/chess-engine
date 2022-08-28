@@ -12,28 +12,27 @@ import {
 } from "utils";
 
 type CliArgToken = {
-  type: Options;
-  data?: string | undefined;
+  type: OptionsThatCanBeSetOnCli;
 };
 
-const optionCliTriggers: Record<Options, string[]> = {
+type OptionsThatCanBeSetOnCli = Options.HELP | Options.VERSION;
+type OptionsThatCanBeSetOnUci = Exclude<
+  Options,
+  // debug is set by debug on in uci, not setoption
+  OptionsThatCanBeSetOnCli | Options.DEBUG
+>;
+
+const optionCliTriggers: Record<OptionsThatCanBeSetOnCli, string[]> = {
   [Options.VERSION]: ["--version", "-v"],
   [Options.HELP]: ["--help", "-h"],
-  [Options.DEBUG]: ["--debug"],
 };
 
-const uciOptionNames: Record<
-  Exclude<Options, Options.VERSION | Options.HELP>,
-  string
-> = {
-  [Options.DEBUG]: "debug",
-};
-
-const optionDescriptions: Record<Options, string> = {
+const cliOptionDescriptions: Record<OptionsThatCanBeSetOnCli, string> = {
   [Options.VERSION]: "Prints the version of the engine.",
   [Options.HELP]: "Prints this help message.",
-  [Options.DEBUG]: "Enables debug mode.",
 };
+
+const uciOptionNames: Record<OptionsThatCanBeSetOnUci, string> = {};
 
 function parseArgTokens(rawArgs: readonly string[]): CliArgToken[] {
   logInfo("Parsing arguments", rawArgs);
@@ -65,12 +64,6 @@ function parseArgTokens(rawArgs: readonly string[]): CliArgToken[] {
         });
         logTrace("Version argument parsed");
         break;
-      case Options.DEBUG:
-        allArgTokens.push({
-          type: arg,
-        });
-        logTrace("Debug argument parsed");
-        break;
       default:
         logTrace("Unknown flag found, skipping index", index);
         break;
@@ -85,12 +78,12 @@ function parseRawFlag(flag: string): Options | undefined {
   logInfo("Parsing raw flag", wrapWithQuotes(flag), "to argument type");
   // Implementation note: Any object's keys are always converted to strings.
   // Because of that, we have to convert back to the numeric enum value.
-  for (const [argument, triggers] of entriesOfObject<`${Options}`, string[]>(
-    optionCliTriggers
-  )) {
+  for (const [argument, triggers] of entriesOfObject<
+    `${OptionsThatCanBeSetOnCli}`,
+    string[]
+  >(optionCliTriggers)) {
     if (triggers.includes(flag)) {
       logTrace("Found raw flag in triggers of argument", argument);
-      // TODO: this cast will work after the upgrade to TS 4.8
       return +argument as typeof argument extends `${infer T extends number}`
         ? T
         : never;
@@ -99,38 +92,12 @@ function parseRawFlag(flag: string): Options | undefined {
   logWarning(undefined, "Raw flag", flag, "isn't parsable");
 }
 
-function validateArgTokens(argTokens: CliArgToken[]): CliArgToken[] {
-  logInfo("Validating arg tokens", argTokens);
-
-  const argTokenTypes = new Set<Options>();
-
-  for (const [index, argToken] of argTokens.entries()) {
-    logTrace("Validating arg token", argToken);
-
-    logTrace(
-      "Checking if arg token type",
-      argToken.type,
-      "is unique in all tokens"
-    );
-    if (argTokenTypes.has(argToken.type)) {
-      logTrace("Arg token type is not unique, removing duplicate");
-      argTokens = argTokens.filter((_, i) => i !== index);
-    }
-
-    logTrace("Arg token type is unique, adding to set of arg token types");
-    argTokenTypes.add(argToken.type);
-
-    logTrace("Arg token validated");
-  }
-
-  return argTokens;
-}
-
 // all options are booleans, it's a bit simpler to use Record instead of an interface
-type IOptions = Record<
-  "printVersionAndExit" | "printHelpAndExit" | "debugMode",
-  boolean
->;
+interface IOptions {
+  readonly printVersionAndExit: boolean;
+  readonly printHelpAndExit: boolean;
+  debugMode: boolean;
+}
 
 class OptionsClass implements IOptions {
   private initialized = false;
@@ -156,8 +123,7 @@ class OptionsClass implements IOptions {
   public initializeFromCliArgs(): void {
     if (this.initialized) return;
 
-    let argTokens: CliArgToken[] = parseArgTokens(processArgv.slice(2));
-    argTokens = validateArgTokens(argTokens);
+    const argTokens: CliArgToken[] = parseArgTokens(processArgv.slice(2));
 
     logTrace("Processing all arg tokens");
     for (const argToken of argTokens) {
@@ -170,10 +136,6 @@ class OptionsClass implements IOptions {
         case Options.HELP:
           logTrace("Setting help option");
           this[Options.HELP] = true;
-          break;
-        case Options.DEBUG:
-          logTrace("Setting debug option");
-          this[Options.DEBUG] = true;
           break;
       }
     }
@@ -192,8 +154,8 @@ function logHelp(): void {
   const newLine = "\n";
 
   const message: string = entriesOfObject(optionCliTriggers)
-    .reduce<string>((acc, [arg, triggers]: [Options, string[]]) => {
-      const description: string = optionDescriptions[arg];
+    .reduce<string>((acc, [arg, triggers]) => {
+      const description: string = cliOptionDescriptions[arg];
 
       return acc + `  ${triggers.join(", ")}: ${description}${newLine}`;
     }, "Usage: engine [options]" + newLine + "Options:" + newLine)

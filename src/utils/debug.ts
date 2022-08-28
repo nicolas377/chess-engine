@@ -10,8 +10,7 @@ type JSONable =
   | number
   | boolean
   | Date
-  | unknown[]
-  | readonly unknown[]
+  | readonly JSONable[]
   | { [key: string]: JSONable };
 
 interface Log {
