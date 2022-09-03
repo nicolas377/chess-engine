@@ -68,6 +68,7 @@ export function parseUciInputString(
       logTrace("Parsing debug command arguments");
       return { type: commandName, on: arrayAtIndex(lineParts, 1) === "on" };
     case UciCommandType.SET_OPTION: {
+      // TODO: check if this is able to parse empty strings
       logTrace("Parsing set option command arguments");
       const name = /(?<=name )(.*)(?= value)/.exec(rawLine)?.[0];
       const value = /(?<=value )(.*)/.exec(rawLine)?.[0];

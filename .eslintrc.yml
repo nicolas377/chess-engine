@@ -26,6 +26,10 @@ rules:
     - error
     - ignoreDeclarationSort: true
       ignoreCase: true
+  quotes:
+    - error
+    - double
+    - avoidEscape: true
   eqeqeq:
     - error
   prefer-const:

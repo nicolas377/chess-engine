@@ -1,15 +1,15 @@
 import { engineIsInState, EngineState } from "state";
 import { UciCommandType, UciInputCommand } from "types";
-import { logInfo, outputToConsole, programOptions } from "utils";
+import {
+  exitProcess,
+  logInfo,
+  logTrace,
+  outputToConsole,
+  programOptions,
+} from "utils";
 
 // pick only input commands that have the specified type T
 type PickTypeFromUciCommands<T extends UciCommandType> = Extract<
-  UciInputCommand,
-  { type: T }
->;
-
-// remove input commands that have the specified type T
-type RemoveTypeFromUciCommands<T extends UciCommandType> = Exclude<
   UciInputCommand,
   { type: T }
 >;
@@ -34,7 +34,6 @@ function handleDebugCommand(
     return;
   }
 
-  logInfo("Setting debug mode to", uciCommand.on ? "on" : "off");
   programOptions.debugMode = uciCommand.on;
 }
 
@@ -54,7 +53,7 @@ function handleIsReadyCommand(
   };
   const sendReadyResponse = (): void => {
     logInfo("Sending ready response");
-    outputToConsole(`readyok`);
+    outputToConsole("readyok");
   };
 
   logInfo("Received is ready command:", uciCommand);
@@ -118,10 +117,12 @@ function handleExitCommand(
   uciCommand: PickTypeFromUciCommands<UciCommandType.EXIT>
 ): void {
   logInfo("Received exit command:", uciCommand);
+  logTrace("Exiting the process");
+  exitProcess(0);
 }
 
 export function handleUciInput(
-  uciInput: RemoveTypeFromUciCommands<UciCommandType.UNKNOWN>
+  uciInput: Exclude<UciInputCommand, { type: UciCommandType.UNKNOWN }>
 ): void {
   switch (uciInput.type) {
     case UciCommandType.UCI:

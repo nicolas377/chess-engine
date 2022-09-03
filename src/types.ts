@@ -15,6 +15,26 @@ export const enum PieceType {
   BLACK = 1 << 7,
 }
 
+export const enum SquareType {
+  A_FILE = 1 << 0,
+  B_FILE = 1 << 1,
+  C_FILE = 1 << 2,
+  D_FILE = 1 << 3,
+  E_FILE = 1 << 4,
+  F_FILE = 1 << 5,
+  G_FILE = 1 << 6,
+  H_FILE = 1 << 7,
+
+  RANK_1 = 1 << 8,
+  RANK_2 = 1 << 9,
+  RANK_3 = 1 << 10,
+  RANK_4 = 1 << 11,
+  RANK_5 = 1 << 12,
+  RANK_6 = 1 << 13,
+  RANK_7 = 1 << 14,
+  RANK_8 = 1 << 15,
+}
+
 export const enum UciCommandType {
   UNKNOWN,
   UCI,
@@ -62,19 +82,25 @@ export type UciInputCommand =
       forcedMoveTime?: number;
     };
 
-export const enum Arguments {
-  CONTEXT_VALUE,
-  VERSION,
-  HELP,
-  DEBUG,
-  LOG_LEVEL,
-}
-
 export const enum Options {
   VERSION,
   HELP,
   DEBUG,
+  // UCI options
+  PONDER,
+  OWN_BOOK,
+  MULTI_PV,
+  SHOW_CURRENT_LINE,
+  SHOW_REFUTATIONS,
+  LIMIT_STRENGTH,
+  ELO,
+  ANALYZE_MODE,
+  // Engine options
+  USE_LICHESS_OPENING_BOOK,
+  USE_LICHESS_TABLEBASE,
 }
+
+export type UciOptionTypes = "check" | "spin" | "combo" | "button" | "string";
 
 export const enum ErrorCodes {
   VALIDATION_ERROR = "0001",
