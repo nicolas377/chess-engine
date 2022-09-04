@@ -1,5 +1,5 @@
 import { engineIsInState, EngineState } from "state";
-import { UciCommandType, UciInputCommand } from "types";
+import { Options, UciCommandType, UciInputCommand } from "types";
 import {
   exitProcess,
   logInfo,
@@ -25,7 +25,7 @@ function handleDebugCommand(
 ): void {
   logInfo("Received debug command:", uciCommand);
 
-  if (programOptions.debugMode === uciCommand.on) {
+  if (programOptions.getOption(Options.DEBUG) === uciCommand.on) {
     logInfo(
       "Debug mode is already",
       `${uciCommand.on ? "on" : "off"}.`,
@@ -34,7 +34,7 @@ function handleDebugCommand(
     return;
   }
 
-  programOptions.debugMode = uciCommand.on;
+  programOptions.setOption(Options.DEBUG, uciCommand.on);
 }
 
 function handleIsReadyCommand(

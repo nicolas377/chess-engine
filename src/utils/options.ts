@@ -120,23 +120,21 @@ function parseRawFlag(flag: string): Options | undefined {
   logWarning(undefined, "Raw flag", flag, "isn't parsable");
 }
 
-interface IOptions {
-  readonly printVersionAndExit: boolean;
-  readonly printHelpAndExit: boolean;
-  debugMode: boolean;
-  canPonder: boolean;
-  useOwnBook: boolean;
-  maxBestLines: number;
-  showCurrentLineWhenCalculating: boolean;
-  showRefutationsWhenCalculating: boolean;
-  limitEngineStrength: boolean;
-  engineLimitElo: number;
-  analyzingGame: boolean;
-  useLichessOpeningBook: boolean;
-  useLichessTablebase: boolean;
-}
+type BooleanOptions =
+  | Options.VERSION
+  | Options.HELP
+  | Options.DEBUG
+  | Options.PONDER
+  | Options.OWN_BOOK
+  | Options.SHOW_CURRENT_LINE
+  | Options.SHOW_REFUTATIONS
+  | Options.LIMIT_STRENGTH
+  | Options.ANALYZE_MODE
+  | Options.USE_LICHESS_OPENING_BOOK
+  | Options.USE_LICHESS_TABLEBASE;
+type NumericOptions = Options.MULTI_PV | Options.ELO;
 
-class OptionsClass implements IOptions {
+class OptionsClass {
   private initialized = false;
 
   private [Options.VERSION] = false;
@@ -145,6 +143,7 @@ class OptionsClass implements IOptions {
   // TODO: check these defaults
   private [Options.PONDER] = false;
   private [Options.OWN_BOOK] = true;
+  // TODO: set a min and max for multi pv?
   private [Options.MULTI_PV] = 1;
   private [Options.SHOW_CURRENT_LINE] = false;
   private [Options.SHOW_REFUTATIONS] = false;
@@ -155,101 +154,24 @@ class OptionsClass implements IOptions {
   private [Options.USE_LICHESS_OPENING_BOOK] = true;
   private [Options.USE_LICHESS_TABLEBASE] = true;
 
-  public get printVersionAndExit(): boolean {
-    return this[Options.VERSION];
+  public getOption(option: BooleanOptions): boolean;
+  public getOption(option: NumericOptions): number;
+  public getOption(option: Options): number | boolean {
+    logInfo("Getting option", option);
+    return this[option];
   }
 
-  public get printHelpAndExit(): boolean {
-    return this[Options.HELP];
+  public setOption(option: BooleanOptions, value: boolean): void;
+  public setOption(option: NumericOptions, value: number): void;
+  public setOption(option: Options, value: number | boolean): void {
+    logInfo("Setting option", option, "to", value);
+    (this[option] as boolean | number) = value;
   }
 
-  public get debugMode(): boolean {
-    return this[Options.DEBUG];
-  }
-  public set debugMode(value: boolean) {
-    logInfo("Turning debug mode", value ? "on" : "off");
-    this[Options.DEBUG] = value;
-  }
-
-  public get canPonder(): boolean {
-    return this[Options.PONDER];
-  }
-  public set canPonder(value: boolean) {
-    logInfo("Setting pondering to", value);
-    this[Options.PONDER] = value;
-  }
-
-  public get useOwnBook(): boolean {
-    return this[Options.OWN_BOOK];
-  }
-  public set useOwnBook(value: boolean) {
-    logInfo("Setting use own book to", value);
-    this[Options.OWN_BOOK] = value;
-  }
-
-  public get maxBestLines(): number {
-    return this[Options.MULTI_PV];
-  }
-  public set maxBestLines(value: number) {
-    logInfo("Setting max best lines to", value);
-    // TODO: set a min and max?
-    this[Options.MULTI_PV] = value;
-  }
-
-  public get showCurrentLineWhenCalculating(): boolean {
-    return this[Options.SHOW_CURRENT_LINE];
-  }
-  public set showCurrentLineWhenCalculating(value: boolean) {
-    logInfo("Setting show current line when calculating to", value);
-    this[Options.SHOW_CURRENT_LINE] = value;
-  }
-
-  public get showRefutationsWhenCalculating(): boolean {
-    return this[Options.SHOW_REFUTATIONS];
-  }
-  public set showRefutationsWhenCalculating(value: boolean) {
-    logInfo("Setting show refutations when calculating to", value);
-    this[Options.SHOW_REFUTATIONS] = value;
-  }
-
-  public get limitEngineStrength(): boolean {
-    return this[Options.LIMIT_STRENGTH];
-  }
-  public set limitEngineStrength(value: boolean) {
-    logInfo("Setting limit engine strength to", value);
-    this[Options.LIMIT_STRENGTH] = value;
-  }
-
-  public get engineLimitElo(): number {
-    return this[Options.ELO];
-  }
-  public set engineLimitElo(value: number) {
-    logInfo("Setting engine limit elo to", value);
-    this[Options.ELO] = value;
-  }
-
-  public get analyzingGame(): boolean {
-    return this[Options.ANALYZE_MODE];
-  }
-  public set analyzingGame(value: boolean) {
-    logInfo("Turning analysis mode", value ? "on" : "off");
-    this[Options.ANALYZE_MODE] = value;
-  }
-
-  public get useLichessOpeningBook(): boolean {
-    return this[Options.USE_LICHESS_OPENING_BOOK];
-  }
-  public set useLichessOpeningBook(value: boolean) {
-    logInfo("Setting use lichess opening book to", value);
-    this[Options.USE_LICHESS_OPENING_BOOK] = value;
-  }
-
-  public get useLichessTablebase(): boolean {
-    return this[Options.USE_LICHESS_TABLEBASE];
-  }
-  public set useLichessTablebase(value: boolean) {
-    logInfo("Setting use lichess tablebase to", value);
-    this[Options.USE_LICHESS_TABLEBASE] = value;
+  // TODO: implement this
+  public initializeFromMainThread(): void {
+    logInfo("Initializing options from main thread");
+    this.initialized = true;
   }
 
   public initializeFromCliArgs(): void {
@@ -273,6 +195,7 @@ class OptionsClass implements IOptions {
     }
 
     logTrace("Arg token processing completed");
+    this.initialized = true;
   }
 }
 

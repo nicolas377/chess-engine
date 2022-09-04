@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as ResolvePath } from "node:path";
-import { DebugLevel, logLevelNames } from "types";
+import { DebugLevel, logLevelNames, Options } from "types";
 import { addTeardownCallback, programOptions } from "utils";
 
 type JSONable =
@@ -14,7 +14,7 @@ type JSONable =
   | { [key: string]: JSONable };
 
 interface Log {
-  date: string;
+  date: number;
   level: DebugLevel;
   message: string;
 }
@@ -31,7 +31,7 @@ export function stringifyMessage(messageComponents: JSONable[]): string {
           ? component.toString()
           : component instanceof Date
           ? component.toISOString()
-          : JSON.stringify(component, (key, value) =>
+          : JSON.stringify(component, (_key, value) =>
               value instanceof Date ? value.toISOString() : value
             );
 
@@ -42,7 +42,7 @@ export function stringifyMessage(messageComponents: JSONable[]): string {
 
 function logMessage(level: DebugLevel, messageComponents: JSONable[]): void {
   logs.push({
-    date: new Date(Date.now()).toISOString(),
+    date: Date.now(),
     level,
     message: stringifyMessage(messageComponents),
   });
@@ -50,7 +50,7 @@ function logMessage(level: DebugLevel, messageComponents: JSONable[]): void {
 
 export function setupDebugTeardown(): void {
   addTeardownCallback(() => {
-    if (!programOptions.debugMode) return;
+    if (!programOptions.getOption(Options.DEBUG)) return;
 
     const logFile = ResolvePath(
       tmpdir(),
@@ -62,7 +62,8 @@ export function setupDebugTeardown(): void {
       logFile,
       logs.reduce<string>(
         (acc, { message, date, level }) =>
-          acc + `[${date}] (${logLevelNames[level]}): ${message}\n`,
+          // prettier-ignore
+          acc + `[${new Date(date).toISOString()}] (${logLevelNames[level]}): ${message}\n`,
         ""
       )
     );

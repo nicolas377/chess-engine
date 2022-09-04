@@ -20,12 +20,12 @@ function main(): void {
   setupTeardown();
   programOptions.initializeFromCliArgs();
 
-  if (programOptions.printHelpAndExit) {
+  if (programOptions.getOption(Options.HELP)) {
     logInfo("Help option specified, logging help and exiting");
     logHelp();
     new GracefulExitError().throw();
   }
-  if (programOptions.printVersionAndExit) {
+  if (programOptions.getOption(Options.VERSION)) {
     logInfo("Version option specified, logging version and exiting");
     logVersion();
     new GracefulExitError().throw();
