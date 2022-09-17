@@ -1,5 +1,7 @@
+import { isMainThread, workerData } from "node:worker_threads";
 import { startEngine } from "cli/wrapper";
 import { addEngineState, clearEngineState, EngineState } from "state";
+import { Options } from "types";
 import {
   GracefulExitError,
   logHelp,
@@ -14,7 +16,7 @@ function setupTeardown(): void {
   setupDebugTeardown();
 }
 
-function main(): void {
+function mainThreadWorker(): void {
   clearEngineState();
   addEngineState(EngineState.STARTUP);
   setupTeardown();
@@ -32,6 +34,15 @@ function main(): void {
   }
 
   startEngine();
+}
+
+function calculatingThreadWorker(): void {
+  programOptions.takeActionFromOptionString(workerData!.serializedOptions);
+}
+
+function main(): void {
+  if (isMainThread) mainThreadWorker();
+  else calculatingThreadWorker();
 }
 
 main();

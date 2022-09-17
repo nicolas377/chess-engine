@@ -3,6 +3,7 @@ import { version } from "../../package.json";
 import { Options } from "types";
 import {
   arrayAtIndex,
+  arrayIncludesValue,
   entriesOfObject,
   logInfo,
   logTrace,
@@ -10,6 +11,8 @@ import {
   outputToConsole,
   wrapWithQuotes,
 } from "utils";
+
+type OptionString = string & { unique: symbol };
 
 type CliArgToken = {
   type: OptionsThatCanBeSetOnCli;
@@ -117,10 +120,10 @@ function parseRawFlag(flag: string): Options | undefined {
         : never;
     }
   }
-  logWarning(undefined, "Raw flag", flag, "isn't parsable");
+  logWarning("Raw flag", flag, "isn't parsable");
 }
 
-type BooleanOptions =
+export type BooleanOptions =
   | Options.VERSION
   | Options.HELP
   | Options.DEBUG
@@ -132,9 +135,24 @@ type BooleanOptions =
   | Options.ANALYZE_MODE
   | Options.USE_LICHESS_OPENING_BOOK
   | Options.USE_LICHESS_TABLEBASE;
-type NumericOptions = Options.MULTI_PV | Options.ELO;
+export type NumericOptions = Options.MULTI_PV | Options.ELO;
 
 class OptionsClass {
+  private allOptions = [
+    Options.VERSION,
+    Options.HELP,
+    Options.DEBUG,
+    Options.PONDER,
+    Options.OWN_BOOK,
+    Options.MULTI_PV,
+    Options.SHOW_CURRENT_LINE,
+    Options.SHOW_REFUTATIONS,
+    Options.LIMIT_STRENGTH,
+    Options.ELO,
+    Options.ANALYZE_MODE,
+    Options.USE_LICHESS_OPENING_BOOK,
+    Options.USE_LICHESS_TABLEBASE,
+  ] as const;
   private initialized = false;
 
   private [Options.VERSION] = false;
@@ -156,6 +174,7 @@ class OptionsClass {
 
   public getOption(option: BooleanOptions): boolean;
   public getOption(option: NumericOptions): number;
+  public getOption(options: BooleanOptions | NumericOptions): number | boolean;
   public getOption(option: Options): number | boolean {
     logInfo("Getting option", option);
     return this[option];
@@ -163,15 +182,59 @@ class OptionsClass {
 
   public setOption(option: BooleanOptions, value: boolean): void;
   public setOption(option: NumericOptions, value: number): void;
+  public setOption(
+    option: BooleanOptions | NumericOptions,
+    value: boolean | number
+  ): void;
   public setOption(option: Options, value: number | boolean): void {
     logInfo("Setting option", option, "to", value);
     (this[option] as boolean | number) = value;
   }
 
-  // TODO: implement this
-  public initializeFromMainThread(): void {
-    logInfo("Initializing options from main thread");
-    this.initialized = true;
+  public takeActionFromOptionString(jsonOptionString: OptionString): void {
+    const getValueFromString = (value: string): boolean | number =>
+      arrayIncludesValue(["true", "false"] as const, value)
+        ? value === "true"
+        : value === "infinity"
+        ? Number.POSITIVE_INFINITY
+        : value === "-infinity"
+        ? Number.NEGATIVE_INFINITY
+        : Number.parseInt(value);
+
+    const options = jsonOptionString
+      .split(",")
+      .map((val) => val.split("=") as [string, string]);
+
+    for (const [option, value] of options) {
+      const optionAsEnum = Number.parseInt(option);
+
+      if (
+        Number.isNaN(optionAsEnum) ||
+        !arrayIncludesValue(this.allOptions, optionAsEnum)
+      ) {
+        logWarning("Invalid option", option);
+        continue;
+      }
+
+      this.setOption(optionAsEnum, getValueFromString(value));
+    }
+  }
+
+  public createOptionString(): OptionString {
+    const stringifyValue = (value: boolean | number): string => {
+      if (value === Number.POSITIVE_INFINITY) return "infinity";
+      else if (value === Number.NEGATIVE_INFINITY) return "-infinity";
+      else return value.toString();
+    };
+
+    // creates a string that looks like this:
+    // `${Options.VERSION}=${this[Options.VERSION]},${Options.HELP}=${this[Options.HELP]}`
+    return this.allOptions
+      .reduce<string[]>(
+        (acc, option) => [...acc, `${option}:${stringifyValue(this[option])}`],
+        []
+      )
+      .join(",") as OptionString;
   }
 
   public initializeFromCliArgs(): void {
@@ -220,4 +283,10 @@ function logHelp(): void {
   outputToConsole(message);
 }
 
-export { programOptions, getUciOptionFromName, logHelp, logVersion };
+export {
+  OptionString,
+  programOptions,
+  getUciOptionFromName,
+  logHelp,
+  logVersion,
+};

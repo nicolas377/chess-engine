@@ -1,4 +1,4 @@
-import { on as processAddListener, exit as ProcessExitRaw } from "node:process";
+import { on as processAddListener, exit as processExitRaw } from "node:process";
 import { logTrace } from "utils";
 
 type TeardownCallback = () => void;
@@ -36,6 +36,6 @@ export function runTeardownCallbacks(calledByProcess?: boolean): void {
   }
   if (calledByProcess) {
     logTrace("Exiting process");
-    ProcessExitRaw();
+    processExitRaw();
   }
 }

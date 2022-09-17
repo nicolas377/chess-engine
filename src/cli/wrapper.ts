@@ -10,18 +10,18 @@ import { logInfo, logWarning, outputToConsole, wrapWithQuotes } from "utils";
 function rawLineReader(cb: (rawLine: string) => void): void {
   processStdin.resume();
 
-  const rl = createInterface({
+  const lineReader = createInterface({
     input: processStdin,
     output: processStdout,
     terminal: false,
   });
 
-  rl.on("line", (line: string) => {
+  lineReader.on("line", (line: string) => {
     cb(line);
   });
 }
 
-export function startEngine(): void {
+export async function startEngine(): Promise<void> {
   logInfo("Starting the engine");
   removeEngineState(EngineState.STARTUP);
   addEngineState(EngineState.READY);
@@ -35,7 +35,7 @@ export function startEngine(): void {
       logInfo(
         "An error occurred while parsing the UCI command. It will be logged, and the command will be ignored."
       );
-      logWarning(undefined, uciCommandOrError.toString());
+      logWarning(uciCommandOrError.toString());
       return;
     }
     if (uciCommandOrError.type === UciCommandType.UNKNOWN) {

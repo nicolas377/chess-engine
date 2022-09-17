@@ -2,4 +2,4 @@
 
 "use strict";
 
-require("./dist/cli.js");
+require("./dist/cli.prod.js");

@@ -8,13 +8,16 @@ import {
   wrapWithQuotes,
 } from "utils";
 
+declare const productionBuild: boolean;
+
 function parseUciCommandName(name: string): UciCommandType {
   logInfo("Parsing UCI command name:", wrapWithQuotes(name));
   switch (name) {
     case "uci":
       return UciCommandType.UCI;
     case "debug":
-      return UciCommandType.DEBUG;
+      if (productionBuild === false) return UciCommandType.DEBUG;
+      else return UciCommandType.UNKNOWN;
     case "isready":
       return UciCommandType.IS_READY;
     case "setoption":
